@@ -10,6 +10,7 @@ export interface UserProfile {
   interests?: string[];
   currentProjects?: string;
   preferredStyle?: PreferredStyle;
+  preferredLanguage?: string;
   bio?: string;
 }
 

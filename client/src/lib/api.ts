@@ -76,6 +76,7 @@ export interface ProfileData {
   interests?: string[];
   currentProjects?: string;
   preferredStyle?: 'technical' | 'simplified' | 'examples-heavy' | 'concise';
+  preferredLanguage?: string;
   bio?: string;
 }
 

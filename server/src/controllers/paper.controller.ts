@@ -240,7 +240,11 @@ class PaperController {
 
   async getAnalysis(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const paper = await Paper.findById(req.params.id);
+      // Fetch paper and user profile in parallel
+      const [paper, user] = await Promise.all([
+        Paper.findById(req.params.id),
+        User.findById(req.userId).select('profile').lean(),
+      ]);
 
       if (!paper) {
         throw new NotFoundError('Paper not found');
@@ -254,9 +258,12 @@ class PaperController {
         throw new BadRequestError('Paper is not ready for analysis');
       }
 
+      // Extract user profile for language preference
+      const userProfile = user?.profile;
+
       // Check if regeneration is requested
       const forceRegenerate = req.query.regenerate === 'true';
-      const analysis = await ragService.getAnalysis(req.params.id!, forceRegenerate);
+      const analysis = await ragService.getAnalysis(req.params.id!, userProfile, forceRegenerate);
 
       res.json({
         status: 'success',
@@ -312,7 +319,11 @@ class PaperController {
 
   async getVisuals(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const paper = await Paper.findById(req.params.id);
+      // Fetch paper and user profile in parallel
+      const [paper, user] = await Promise.all([
+        Paper.findById(req.params.id),
+        User.findById(req.userId).select('profile').lean(),
+      ]);
 
       if (!paper) {
         throw new NotFoundError('Paper not found');
@@ -326,9 +337,12 @@ class PaperController {
         throw new BadRequestError('Paper is not ready for visual generation');
       }
 
+      // Extract user profile for language preference
+      const userProfile = user?.profile;
+
       // Check if regeneration is requested
       const forceRegenerate = req.query.regenerate === 'true';
-      const visuals = await ragService.getVisuals(req.params.id!, forceRegenerate);
+      const visuals = await ragService.getVisuals(req.params.id!, userProfile, forceRegenerate);
 
       res.json({
         status: 'success',

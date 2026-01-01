@@ -45,6 +45,7 @@ class ProfileController {
         interests,
         currentProjects,
         preferredStyle,
+        preferredLanguage,
         bio,
       } = req.body;
 
@@ -56,6 +57,7 @@ class ProfileController {
       if (interests !== undefined) profileUpdate.interests = interests;
       if (currentProjects !== undefined) profileUpdate.currentProjects = currentProjects;
       if (preferredStyle !== undefined) profileUpdate.preferredStyle = preferredStyle;
+      if (preferredLanguage !== undefined) profileUpdate.preferredLanguage = preferredLanguage;
       if (bio !== undefined) profileUpdate.bio = bio;
 
       const user = await User.findByIdAndUpdate(
@@ -94,6 +96,7 @@ class ProfileController {
         interests,
         currentProjects,
         preferredStyle,
+        preferredLanguage,
         bio,
       } = req.body;
 
@@ -105,6 +108,7 @@ class ProfileController {
       if (interests !== undefined) updateFields['profile.interests'] = interests;
       if (currentProjects !== undefined) updateFields['profile.currentProjects'] = currentProjects;
       if (preferredStyle !== undefined) updateFields['profile.preferredStyle'] = preferredStyle;
+      if (preferredLanguage !== undefined) updateFields['profile.preferredLanguage'] = preferredLanguage;
       if (bio !== undefined) updateFields['profile.bio'] = bio;
 
       const user = await User.findByIdAndUpdate(

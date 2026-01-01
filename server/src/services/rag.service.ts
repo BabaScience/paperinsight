@@ -172,6 +172,14 @@ ${profileContext.join('\n\n')}
 Adapt your response to this user's background and preferences while maintaining accuracy and helpfulness.`;
   }
 
+  // Add language instruction - this should be at the end for emphasis
+  if (profile.preferredLanguage && profile.preferredLanguage.toLowerCase() !== 'english') {
+    prompt += `
+
+--- LANGUAGE REQUIREMENT ---
+IMPORTANT: You MUST respond entirely in ${profile.preferredLanguage}. All explanations, summaries, descriptions, and text must be written in ${profile.preferredLanguage}. Do not use English unless specifically quoting from the paper.`;
+  }
+
   return prompt;
 }
 
@@ -358,7 +366,7 @@ Please provide a comprehensive answer based on the context above.`;
     }
   }
 
-  async getAnalysis(paperId: string, forceRegenerate = false): Promise<AnalysisResult> {
+  async getAnalysis(paperId: string, userProfile?: IUserProfile, forceRegenerate = false): Promise<AnalysisResult> {
     // First, check if we have cached analysis
     const paper = await Paper.findById(paperId)
       .select('title authors abstract sections rawText analysis')
@@ -393,6 +401,11 @@ Please provide a comprehensive answer based on the context above.`;
       ? chunks.map(c => c.content).join('\n\n')
       : paper.rawText?.slice(0, 8000) || '';
 
+    // Build language instruction if user has a preferred language
+    const languageInstruction = userProfile?.preferredLanguage && userProfile.preferredLanguage.toLowerCase() !== 'english'
+      ? `\n\nIMPORTANT: Write ALL your response (summary, insights, methodology, limitations) in ${userProfile.preferredLanguage}. Do not use English.`
+      : '';
+
     const prompt = `Analyze the following research paper content and extract:
 
 Paper Title: ${paper.title}
@@ -408,7 +421,7 @@ Please provide:
 3. Methodology overview (if identifiable)
 4. Limitations mentioned (if any)
 
-Format your response as JSON with keys: summary, keyInsights (array), methodology, limitations`;
+Format your response as JSON with keys: summary, keyInsights (array), methodology, limitations${languageInstruction}`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -452,14 +465,14 @@ Format your response as JSON with keys: summary, keyInsights (array), methodolog
   }
 
   // Method to regenerate analysis (useful if user wants fresh insights)
-  async regenerateAnalysis(paperId: string): Promise<AnalysisResult> {
-    return this.getAnalysis(paperId, true);
+  async regenerateAnalysis(paperId: string, userProfile?: IUserProfile): Promise<AnalysisResult> {
+    return this.getAnalysis(paperId, userProfile, true);
   }
 
   /**
    * Generate visual diagrams for a paper using Mermaid
    */
-  async getVisuals(paperId: string, forceRegenerate = false): Promise<VisualsResult> {
+  async getVisuals(paperId: string, userProfile?: IUserProfile, forceRegenerate = false): Promise<VisualsResult> {
     // First, check if we have cached visuals
     const paper = await Paper.findById(paperId)
       .select('title authors abstract sections rawText visuals')
@@ -494,6 +507,11 @@ Format your response as JSON with keys: summary, keyInsights (array), methodolog
     // Build sections summary for context
     const sectionsContext = paper.sections?.length 
       ? paper.sections.map(s => `${s.title}: ${s.content.slice(0, 200)}...`).join('\n')
+      : '';
+
+    // Build language instruction for diagram descriptions (not the Mermaid code itself)
+    const languageInstruction = userProfile?.preferredLanguage && userProfile.preferredLanguage.toLowerCase() !== 'english'
+      ? `\n\nIMPORTANT LANGUAGE REQUIREMENT: Write the "title" and "description" fields in ${userProfile.preferredLanguage}. The Mermaid "code" should use English for node IDs but labels can be in ${userProfile.preferredLanguage} if they fit.`
       : '';
 
     const prompt = `Analyze the following research paper and create 2-3 Mermaid diagrams that best visualize its key concepts.
@@ -550,7 +568,7 @@ Return a JSON object with this exact structure:
   ]
 }
 
-Generate 2-3 diagrams that provide different perspectives on the paper's content.`;
+Generate 2-3 diagrams that provide different perspectives on the paper's content.${languageInstruction}`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -644,8 +662,8 @@ Generate 2-3 diagrams that provide different perspectives on the paper's content
   /**
    * Regenerate visuals (useful if user wants fresh diagrams)
    */
-  async regenerateVisuals(paperId: string): Promise<VisualsResult> {
-    return this.getVisuals(paperId, true);
+  async regenerateVisuals(paperId: string, userProfile?: IUserProfile): Promise<VisualsResult> {
+    return this.getVisuals(paperId, userProfile, true);
   }
 
   /**
@@ -746,7 +764,11 @@ Return a JSON object with this exact structure:
 
 ${!userProfile || Object.keys(userProfile).length === 0 
   ? 'NOTE: No user profile provided. Generate general-purpose implementation ideas that would be valuable to most researchers.'
-  : 'Make sure each idea is specifically tailored to the user\'s interests, field, and current projects.'}`;
+  : 'Make sure each idea is specifically tailored to the user\'s interests, field, and current projects.'}${
+  userProfile?.preferredLanguage && userProfile.preferredLanguage.toLowerCase() !== 'english'
+    ? `\n\nIMPORTANT LANGUAGE REQUIREMENT: Write ALL content (title, description, relevance, steps, tools) in ${userProfile.preferredLanguage}. Do not use English.`
+    : ''
+}`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',

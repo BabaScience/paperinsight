@@ -13,6 +13,7 @@ import {
   Close,
   CheckCircle,
   AutoAwesome,
+  Language,
 } from '@mui/icons-material';
 import { CircularProgress, Tooltip, Chip } from '@mui/material';
 import { profileApi, ProfileData } from '@/lib/api';
@@ -51,6 +52,21 @@ const COMMON_RESEARCH_FIELDS = [
   'Engineering',
 ];
 
+const LANGUAGE_OPTIONS = [
+  { value: 'English', label: 'English', flag: '🇬🇧' },
+  { value: 'Spanish', label: 'Español', flag: '🇪🇸' },
+  { value: 'French', label: 'Français', flag: '🇫🇷' },
+  { value: 'German', label: 'Deutsch', flag: '🇩🇪' },
+  { value: 'Italian', label: 'Italiano', flag: '🇮🇹' },
+  { value: 'Portuguese', label: 'Português', flag: '🇵🇹' },
+  { value: 'Chinese', label: '中文', flag: '🇨🇳' },
+  { value: 'Japanese', label: '日本語', flag: '🇯🇵' },
+  { value: 'Korean', label: '한국어', flag: '🇰🇷' },
+  { value: 'Arabic', label: 'العربية', flag: '🇸🇦' },
+  { value: 'Russian', label: 'Русский', flag: '🇷🇺' },
+  { value: 'Hindi', label: 'हिन्दी', flag: '🇮🇳' },
+];
+
 export function ProfilePage() {
   const { profile, setProfile, setLoading, setError, isLoading } = useProfileStore();
   const { user } = useAuthStore();
@@ -61,6 +77,7 @@ export function ProfilePage() {
     interests: [],
     currentProjects: '',
     preferredStyle: undefined,
+    preferredLanguage: undefined,
     bio: '',
   });
   
@@ -84,6 +101,7 @@ export function ProfilePage() {
         interests: profile.interests || [],
         currentProjects: profile.currentProjects || '',
         preferredStyle: profile.preferredStyle,
+        preferredLanguage: profile.preferredLanguage,
         bio: profile.bio || '',
       });
       setHasChanges(changed);
@@ -94,6 +112,7 @@ export function ProfilePage() {
         (formData.interests && formData.interests.length > 0) ||
         !!formData.currentProjects ||
         !!formData.preferredStyle ||
+        !!formData.preferredLanguage ||
         !!formData.bio
       );
     }
@@ -111,6 +130,7 @@ export function ProfilePage() {
         interests: loadedProfile.interests || [],
         currentProjects: loadedProfile.currentProjects || '',
         preferredStyle: loadedProfile.preferredStyle,
+        preferredLanguage: loadedProfile.preferredLanguage,
         bio: loadedProfile.bio || '',
       });
     } catch (err) {
@@ -148,6 +168,7 @@ export function ProfilePage() {
         interests: [],
         currentProjects: '',
         preferredStyle: undefined,
+        preferredLanguage: undefined,
         bio: '',
       });
       setHasChanges(false);
@@ -574,11 +595,65 @@ export function ProfilePage() {
           </div>
         </motion.div>
 
+        {/* Preferred Language */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.55 }}
+          className="card"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-coral to-accent-gold flex items-center justify-center">
+              <Language className="text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Preferred Language</h3>
+              <p className="text-sm text-muted">
+                AI will respond in this language for all features
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {LANGUAGE_OPTIONS.map((option) => (
+              <motion.button
+                key={option.value}
+                onClick={() => setFormData({ ...formData, preferredLanguage: option.value })}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`p-3 rounded-xl border-2 text-left transition-all ${
+                  formData.preferredLanguage === option.value
+                    ? 'border-primary-500 bg-primary-500/10'
+                    : 'border-border hover:border-primary-500/30 hover:bg-surface'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{option.flag}</span>
+                  <div>
+                    <p className={`font-medium text-sm ${
+                      formData.preferredLanguage === option.value ? 'text-primary-500' : 'text-foreground'
+                    }`}>
+                      {option.label}
+                    </p>
+                    <p className="text-xs text-muted">{option.value}</p>
+                  </div>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+
+          {!formData.preferredLanguage && (
+            <p className="text-sm text-muted text-center mt-4">
+              No language selected. AI will respond in English by default.
+            </p>
+          )}
+        </motion.div>
+
         {/* How it works info */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.65 }}
           className="bg-gradient-to-r from-primary-500/10 via-accent-violet/10 to-accent-coral/10 rounded-2xl p-6 border border-primary-500/20"
         >
           <div className="flex items-start gap-4">
@@ -612,6 +687,12 @@ export function ProfilePage() {
                   <span className="w-1.5 h-1.5 bg-accent-coral rounded-full mt-2 flex-shrink-0" />
                   <span>
                     <strong className="text-foreground">Response style</strong> controls format and verbosity
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 bg-accent-gold rounded-full mt-2 flex-shrink-0" />
+                  <span>
+                    <strong className="text-foreground">Preferred language</strong> makes AI respond in your native language
                   </span>
                 </li>
               </ul>

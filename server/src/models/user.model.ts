@@ -10,6 +10,7 @@ export interface IUserProfile {
   interests?: string[];
   currentProjects?: string;
   preferredStyle?: PreferredStyle;
+  preferredLanguage?: string;
   bio?: string;
 }
 
@@ -51,6 +52,11 @@ const profileSchema = new Schema<IUserProfile>(
     preferredStyle: {
       type: String,
       enum: ['technical', 'simplified', 'examples-heavy', 'concise'],
+    },
+    preferredLanguage: {
+      type: String,
+      trim: true,
+      maxlength: 50,
     },
     bio: {
       type: String,
