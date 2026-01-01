@@ -10,7 +10,7 @@ interface ThemeWrapperProps {
 }
 
 export function ThemeWrapper({ children }: ThemeWrapperProps) {
-  const { resolvedMode, mode } = useThemeStore();
+  const { resolvedMode } = useThemeStore();
 
   // Apply theme class to document on mount and changes
   useEffect(() => {

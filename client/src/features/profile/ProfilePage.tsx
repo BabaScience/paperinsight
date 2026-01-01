@@ -16,22 +16,23 @@ import {
   Language,
 } from '@mui/icons-material';
 import { CircularProgress, Tooltip, Chip } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { profileApi, ProfileData } from '@/lib/api';
 import { useProfileStore, ExpertiseLevel, PreferredStyle } from '@/stores/profileStore';
 import { useAuthStore } from '@/stores/authStore';
 
-const EXPERTISE_OPTIONS: { value: ExpertiseLevel; label: string; description: string }[] = [
-  { value: 'beginner', label: 'Beginner', description: 'New to research, need simple explanations' },
-  { value: 'intermediate', label: 'Intermediate', description: 'Familiar with basics, learning advanced concepts' },
-  { value: 'advanced', label: 'Advanced', description: 'Deep knowledge, comfortable with technical details' },
-  { value: 'expert', label: 'Expert', description: 'Professional researcher, want nuanced discussions' },
+const EXPERTISE_OPTIONS: { value: ExpertiseLevel; labelKey: string; descKey: string }[] = [
+  { value: 'beginner', labelKey: 'profile.beginner', descKey: 'profile.beginnerDesc' },
+  { value: 'intermediate', labelKey: 'profile.intermediate', descKey: 'profile.intermediateDesc' },
+  { value: 'advanced', labelKey: 'profile.advanced', descKey: 'profile.advancedDesc' },
+  { value: 'expert', labelKey: 'profile.expert', descKey: 'profile.expertDesc' },
 ];
 
-const STYLE_OPTIONS: { value: PreferredStyle; label: string; icon: React.ElementType; description: string }[] = [
-  { value: 'technical', label: 'Technical', icon: School, description: 'Detailed, precise terminology' },
-  { value: 'simplified', label: 'Simplified', icon: Lightbulb, description: 'Clear, accessible language' },
-  { value: 'examples-heavy', label: 'With Examples', icon: Work, description: 'Lots of concrete examples' },
-  { value: 'concise', label: 'Concise', icon: Description, description: 'Brief, to the point' },
+const STYLE_OPTIONS: { value: PreferredStyle; labelKey: string; icon: React.ElementType; descKey: string }[] = [
+  { value: 'technical', labelKey: 'profile.technical', icon: School, descKey: 'profile.technicalDesc' },
+  { value: 'simplified', labelKey: 'profile.simplified', icon: Lightbulb, descKey: 'profile.simplifiedDesc' },
+  { value: 'examples-heavy', labelKey: 'profile.withExamples', icon: Work, descKey: 'profile.withExamplesDesc' },
+  { value: 'concise', labelKey: 'profile.concise', icon: Description, descKey: 'profile.conciseDesc' },
 ];
 
 const COMMON_RESEARCH_FIELDS = [
@@ -70,6 +71,7 @@ const LANGUAGE_OPTIONS = [
 export function ProfilePage() {
   const { profile, setProfile, setLoading, setError, isLoading } = useProfileStore();
   const { user } = useAuthStore();
+  const { t } = useTranslation();
   
   const [formData, setFormData] = useState<ProfileData>({
     researchField: '',
@@ -209,7 +211,7 @@ export function ProfilePage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <CircularProgress size={40} className="text-primary-500" />
-          <p className="mt-4 text-muted">Loading your profile...</p>
+          <p className="mt-4 text-muted">{t('profile.loadingProfile')}</p>
         </div>
       </div>
     );
@@ -229,10 +231,10 @@ export function ProfilePage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              Your Profile
+              {t('profile.title')}
             </h1>
             <p className="text-muted">
-              Personalize how AI responds to your questions
+              {t('profile.subtitle')}
             </p>
           </div>
         </div>
@@ -244,10 +246,10 @@ export function ProfilePage() {
               animate={{ opacity: 1, scale: 1 }}
               className="text-sm text-accent-gold"
             >
-              Unsaved changes
+              {t('profile.unsavedChanges')}
             </motion.span>
           )}
-          <Tooltip title="Reset to defaults">
+          <Tooltip title={t('profile.resetToDefaults')}>
             <button
               onClick={handleReset}
               disabled={isSaving}
@@ -268,7 +270,7 @@ export function ProfilePage() {
             ) : (
               <Save />
             )}
-            Save Profile
+            {t('profile.saveProfile')}
           </motion.button>
         </div>
       </motion.div>
@@ -284,7 +286,7 @@ export function ProfilePage() {
           >
             <CheckCircle className="text-accent-mint" />
             <span className="text-accent-mint font-medium">
-              Profile saved successfully! AI responses will now be personalized.
+              {t('profile.saveSuccess')}
             </span>
           </motion.div>
         )}
@@ -312,7 +314,7 @@ export function ProfilePage() {
           <div className="space-y-4">
             <div className="relative">
               <label className="block text-sm font-medium text-foreground mb-2">
-                Research Field / Area of Study
+                {t('profile.researchField')}
               </label>
               <div className="relative">
                 <input
@@ -324,7 +326,7 @@ export function ProfilePage() {
                   }}
                   onFocus={() => setShowFieldSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowFieldSuggestions(false), 200)}
-                  placeholder="e.g., Machine Learning, Neuroscience..."
+                  placeholder={t('profile.researchFieldPlaceholder')}
                   className="input-field pr-10"
                   maxLength={100}
                 />
@@ -359,12 +361,12 @@ export function ProfilePage() {
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                Bio (Optional)
+                {t('profile.bioOptional')}
               </label>
               <textarea
                 value={formData.bio}
                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                placeholder="Tell us a bit about yourself and your research background..."
+                placeholder={t('profile.bioPlaceholder')}
                 className="input-field resize-none"
                 rows={3}
                 maxLength={300}
@@ -388,9 +390,9 @@ export function ProfilePage() {
               <Psychology className="text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-foreground">Expertise Level</h3>
+              <h3 className="font-semibold text-foreground">{t('profile.expertiseLevel')}</h3>
               <p className="text-sm text-muted">
-                Helps AI adjust explanation complexity
+                {t('profile.expertiseLevelDescription')}
               </p>
             </div>
           </div>
@@ -411,9 +413,9 @@ export function ProfilePage() {
                 <p className={`font-medium ${
                   formData.expertiseLevel === option.value ? 'text-primary-500' : 'text-foreground'
                 }`}>
-                  {option.label}
+                  {t(option.labelKey)}
                 </p>
-                <p className="text-sm text-muted mt-1">{option.description}</p>
+                <p className="text-sm text-muted mt-1">{t(option.descKey)}</p>
               </motion.button>
             ))}
           </div>
@@ -431,9 +433,9 @@ export function ProfilePage() {
               <Lightbulb className="text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-foreground">Research Interests</h3>
+              <h3 className="font-semibold text-foreground">{t('profile.interests')}</h3>
               <p className="text-sm text-muted">
-                AI will draw connections to these topics when relevant
+                {t('profile.interestsDescription')}
               </p>
             </div>
           </div>
@@ -450,7 +452,7 @@ export function ProfilePage() {
                     addInterest();
                   }
                 }}
-                placeholder="Add an interest..."
+                placeholder={t('profile.addInterest')}
                 className="input-field flex-1"
                 maxLength={50}
                 disabled={formData.interests && formData.interests.length >= 10}
@@ -498,12 +500,12 @@ export function ProfilePage() {
 
             {formData.interests && formData.interests.length === 0 && (
               <p className="text-sm text-muted text-center py-4">
-                No interests added yet. Add up to 10 topics you're interested in.
+                {t('profile.noInterests')}
               </p>
             )}
 
             <p className="text-xs text-muted text-right">
-              {formData.interests?.length || 0}/10 interests
+              {t('profile.interestCount', { count: formData.interests?.length || 0 })}
             </p>
           </div>
         </motion.div>
@@ -520,9 +522,9 @@ export function ProfilePage() {
               <Work className="text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-foreground">Current Projects</h3>
+              <h3 className="font-semibold text-foreground">{t('profile.currentProjects')}</h3>
               <p className="text-sm text-muted">
-                AI can relate concepts to your ongoing work
+                {t('profile.currentProjectsDescription')}
               </p>
             </div>
           </div>
@@ -530,7 +532,7 @@ export function ProfilePage() {
           <textarea
             value={formData.currentProjects}
             onChange={(e) => setFormData({ ...formData, currentProjects: e.target.value })}
-            placeholder="Describe what you're currently working on..."
+            placeholder={t('profile.currentProjectsPlaceholder')}
             className="input-field resize-none"
             rows={4}
             maxLength={500}
@@ -552,9 +554,9 @@ export function ProfilePage() {
               <AutoAwesome className="text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-foreground">Preferred Response Style</h3>
+              <h3 className="font-semibold text-foreground">{t('profile.preferredStyle')}</h3>
               <p className="text-sm text-muted">
-                How would you like AI to explain things?
+                {t('profile.preferredStyleDescription')}
               </p>
             </div>
           </div>
@@ -585,9 +587,9 @@ export function ProfilePage() {
                     <p className={`font-medium ${
                       formData.preferredStyle === option.value ? 'text-primary-500' : 'text-foreground'
                     }`}>
-                      {option.label}
+                      {t(option.labelKey)}
                     </p>
-                    <p className="text-sm text-muted mt-0.5">{option.description}</p>
+                    <p className="text-sm text-muted mt-0.5">{t(option.descKey)}</p>
                   </div>
                 </motion.button>
               );
@@ -607,9 +609,9 @@ export function ProfilePage() {
               <Language className="text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-foreground">Preferred Language</h3>
+              <h3 className="font-semibold text-foreground">{t('profile.preferredLanguage')}</h3>
               <p className="text-sm text-muted">
-                AI will respond in this language for all features
+                {t('profile.preferredLanguageDescription')}
               </p>
             </div>
           </div>
@@ -644,7 +646,7 @@ export function ProfilePage() {
 
           {!formData.preferredLanguage && (
             <p className="text-sm text-muted text-center mt-4">
-              No language selected. AI will respond in English by default.
+              {t('profile.noLanguageSelected')}
             </p>
           )}
         </motion.div>
@@ -662,37 +664,37 @@ export function ProfilePage() {
             </div>
             <div>
               <h3 className="font-semibold text-foreground mb-2">
-                How AI Personalization Works
+                {t('profile.howItWorks')}
               </h3>
               <ul className="space-y-2 text-sm text-muted">
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2 flex-shrink-0" />
                   <span>
-                    <strong className="text-foreground">Expertise level</strong> adjusts language complexity in every response
+                    <strong className="text-foreground">{t('profile.expertiseLevel')}</strong> {t('profile.howExpertise')}
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-accent-violet rounded-full mt-2 flex-shrink-0" />
                   <span>
-                    <strong className="text-foreground">Interests</strong> help AI make relevant connections and examples
+                    <strong className="text-foreground">{t('profile.interests')}</strong> {t('profile.howInterests')}
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-accent-teal rounded-full mt-2 flex-shrink-0" />
                   <span>
-                    <strong className="text-foreground">Current projects</strong> are referenced for methodology questions
+                    <strong className="text-foreground">{t('profile.currentProjects')}</strong> {t('profile.howProjects')}
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-accent-coral rounded-full mt-2 flex-shrink-0" />
                   <span>
-                    <strong className="text-foreground">Response style</strong> controls format and verbosity
+                    <strong className="text-foreground">{t('profile.preferredStyle')}</strong> {t('profile.howStyle')}
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-accent-gold rounded-full mt-2 flex-shrink-0" />
                   <span>
-                    <strong className="text-foreground">Preferred language</strong> makes AI respond in your native language
+                    <strong className="text-foreground">{t('profile.preferredLanguage')}</strong> {t('profile.howLanguage')}
                   </span>
                 </li>
               </ul>

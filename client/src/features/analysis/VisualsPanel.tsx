@@ -11,6 +11,7 @@ import {
   CheckCircle,
 } from '@mui/icons-material';
 import { CircularProgress, Tooltip } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { papersApi } from '@/lib/api';
 import { MermaidDiagram } from '@/components/MermaidDiagram';
 
@@ -48,6 +49,7 @@ export function VisualsPanel({ paperId }: VisualsPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [cached, setCached] = useState(false);
   const [selectedDiagram, setSelectedDiagram] = useState<number>(0);
+  const { t } = useTranslation();
 
   useEffect(() => {
     loadVisuals();
@@ -70,7 +72,7 @@ export function VisualsPanel({ paperId }: VisualsPanelProps) {
       setSelectedDiagram(0);
     } catch (err) {
       console.error('Failed to load visuals:', err);
-      setError('Failed to generate visual diagrams. Please try again.');
+      setError(t('visuals.failedToGenerate'));
     } finally {
       setIsLoading(false);
       setIsRegenerating(false);
@@ -94,8 +96,8 @@ export function VisualsPanel({ paperId }: VisualsPanelProps) {
             transition={{ duration: 1.5, repeat: Infinity }}
           />
         </div>
-        <p className="mt-4 text-foreground font-medium">Generating visual diagrams...</p>
-        <p className="text-sm text-muted mt-1">AI is analyzing the paper structure</p>
+        <p className="mt-4 text-foreground font-medium">{t('visuals.generating')}</p>
+        <p className="text-sm text-muted mt-1">{t('visuals.analyzingStructure')}</p>
       </div>
     );
   }
@@ -106,14 +108,14 @@ export function VisualsPanel({ paperId }: VisualsPanelProps) {
         <div className="w-16 h-16 rounded-2xl bg-accent-coral/10 border border-accent-coral/30 flex items-center justify-center">
           <ErrorIcon className="text-accent-coral text-2xl" />
         </div>
-        <p className="mt-4 text-foreground font-medium">Failed to generate diagrams</p>
+        <p className="mt-4 text-foreground font-medium">{t('visuals.failedTitle')}</p>
         <p className="text-sm text-muted mt-1 text-center max-w-md">{error}</p>
         <button
           onClick={handleRegenerate}
           className="mt-4 btn-secondary flex items-center gap-2"
         >
           <Refresh className="w-4 h-4" />
-          Try Again
+          {t('visuals.tryAgain')}
         </button>
       </div>
     );
@@ -125,16 +127,16 @@ export function VisualsPanel({ paperId }: VisualsPanelProps) {
         <div className="w-16 h-16 rounded-2xl bg-surface border border-border flex items-center justify-center">
           <BubbleChart className="text-muted text-2xl" />
         </div>
-        <p className="mt-4 text-foreground font-medium">No diagrams available</p>
+        <p className="mt-4 text-foreground font-medium">{t('visuals.noDiagrams')}</p>
         <p className="text-sm text-muted mt-1 text-center max-w-md">
-          The AI couldn't generate visual diagrams for this paper.
+          {t('visuals.noDiagramsDesc')}
         </p>
         <button
           onClick={handleRegenerate}
           className="mt-4 btn-primary flex items-center gap-2"
         >
           <AutoAwesome className="w-4 h-4" />
-          Generate Diagrams
+          {t('visuals.generateDiagrams')}
         </button>
       </div>
     );
@@ -153,23 +155,23 @@ export function VisualsPanel({ paperId }: VisualsPanelProps) {
             <AutoAwesome className="text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">Visual Diagrams</h3>
+            <h3 className="font-semibold text-foreground">{t('visuals.title')}</h3>
             <p className="text-sm text-muted">
-              {diagrams.length} diagram{diagrams.length !== 1 ? 's' : ''} generated
+              {t('visuals.diagramCount', { count: diagrams.length })}
             </p>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
           {cached && (
-            <Tooltip title="Loaded from cache">
+            <Tooltip title={t('visuals.cachedTooltip')}>
               <span className="flex items-center gap-1 px-2 py-1 text-xs bg-accent-mint/10 text-accent-mint rounded-lg">
                 <CheckCircle className="w-3 h-3" />
-                Cached
+                {t('visuals.cached')}
               </span>
             </Tooltip>
           )}
-          <Tooltip title="Regenerate diagrams">
+          <Tooltip title={t('visuals.regenerate')}>
             <button
               onClick={handleRegenerate}
               disabled={isRegenerating}

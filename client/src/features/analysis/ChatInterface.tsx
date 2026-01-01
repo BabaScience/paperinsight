@@ -18,6 +18,7 @@ import {
 } from '@mui/icons-material';
 import { CircularProgress, Tooltip, IconButton } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
+import { useTranslation } from 'react-i18next';
 import { papersApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
@@ -42,11 +43,11 @@ interface Message {
   isError?: boolean;
 }
 
-const suggestedQuestions = [
-  { icon: TipsAndUpdates, text: "What is the main contribution?", color: "from-amber-500 to-orange-500" },
-  { icon: Science, text: "What methodology was used?", color: "from-cyan-500 to-blue-500" },
-  { icon: Psychology, text: "What are the key findings?", color: "from-violet-500 to-purple-500" },
-  { icon: QuestionMark, text: "What are the limitations?", color: "from-rose-500 to-pink-500" },
+const suggestedQuestionKeys = [
+  { icon: TipsAndUpdates, key: "chat.mainContribution", color: "from-amber-500 to-orange-500" },
+  { icon: Science, key: "chat.methodologyUsed", color: "from-cyan-500 to-blue-500" },
+  { icon: Psychology, key: "chat.keyFindings", color: "from-violet-500 to-purple-500" },
+  { icon: QuestionMark, key: "chat.whatLimitations", color: "from-rose-500 to-pink-500" },
 ];
 
 export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessageCountChange }: ChatInterfaceProps) {
@@ -59,6 +60,7 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { accessToken, logout } = useAuthStore();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Load conversation history
   const { data: conversationData } = useQuery({
@@ -113,7 +115,7 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
 
     try {
       if (!accessToken) {
-        toast.error('Please log in again');
+        toast.error(t('chat.pleaseLogin'));
         logout();
         navigate('/login');
         return;
@@ -129,7 +131,7 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
       });
 
       if (response.status === 401) {
-        toast.error('Session expired. Please log in again.');
+        toast.error(t('chat.sessionExpired'));
         logout();
         navigate('/login');
         return;
@@ -192,12 +194,12 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
         const newMessages = [...prev];
         const lastMessage = newMessages[newMessages.length - 1];
         if (lastMessage?.role === 'assistant') {
-          lastMessage.content = 'Sorry, I encountered an error processing your question. Please try again.';
+          lastMessage.content = t('chat.errorMessage');
           lastMessage.isError = true;
         }
         return newMessages;
       });
-      toast.error('Failed to get response');
+      toast.error(t('chat.failedResponse'));
     } finally {
       setIsStreaming(false);
     }
@@ -220,7 +222,7 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
     await navigator.clipboard.writeText(text);
     setCopiedId(idx);
     setTimeout(() => setCopiedId(null), 2000);
-    toast.success('Copied to clipboard');
+    toast.success(t('chat.copiedToClipboard'));
   };
 
   // Auto-resize textarea
@@ -250,11 +252,11 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-accent-mint rounded-full border-2 border-background" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-foreground">Ask about this paper</h3>
-            <p className="text-xs text-muted">Powered by RAG + GPT-4o</p>
+            <h3 className="font-semibold text-foreground">{t('chat.header')}</h3>
+            <p className="text-xs text-muted">{t('chat.poweredBy')}</p>
           </div>
           {messages.length > 0 && (
-            <Tooltip title="Clear conversation">
+            <Tooltip title={t('chat.clearConversation')}>
               <IconButton
                 size="small"
                 onClick={() => setMessages([])}
@@ -284,23 +286,24 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
             </div>
             
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              Ask me anything
+              {t('chat.askAnything')}
             </h3>
             <p className="text-muted text-sm mb-6 max-w-[280px] mx-auto leading-relaxed">
-              I've analyzed "<span className="text-primary-400 font-medium">{paperTitle}</span>" and can answer your questions
+              {t('chat.analyzedPaper', { title: paperTitle })}
             </p>
             
             {/* Suggested questions grid */}
             <div className="grid grid-cols-2 gap-2">
-              {suggestedQuestions.map((q, idx) => {
+              {suggestedQuestionKeys.map((q, idx) => {
                 const Icon = q.icon;
+                const questionText = t(q.key);
                 return (
                   <motion.button
                     key={idx}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.1 }}
-                    onClick={() => sendMessage(q.text)}
+                    onClick={() => sendMessage(questionText)}
                     className="group relative p-3 text-left bg-surface/50 hover:bg-surface border border-border/50 hover:border-primary-500/30 rounded-xl transition-all duration-200 overflow-hidden"
                   >
                     <div className={`absolute inset-0 bg-gradient-to-br ${q.color} opacity-0 group-hover:opacity-5 transition-opacity`} />
@@ -308,7 +311,7 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
                       <Icon className="text-white text-sm" />
                     </div>
                     <p className="text-xs text-foreground font-medium leading-tight">
-                      {q.text}
+                      {questionText}
                     </p>
                   </motion.button>
                 );
@@ -397,7 +400,7 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
                                 className="w-2 h-2 bg-primary-400 rounded-full"
                               />
                             </div>
-                            <span className="text-sm text-muted">Analyzing paper...</span>
+                            <span className="text-sm text-muted">{t('chat.analyzingPaper')}</span>
                           </div>
                         ) : null}
                         {isStreaming && idx === messages.length - 1 && message.content && (
@@ -436,7 +439,7 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
                     >
                       <p className="text-xs text-muted flex items-center gap-1">
                         <Article className="w-3 h-3" />
-                        <span className="font-medium">{message.sources.length} sources</span>
+                        <span className="font-medium">{t('chat.sources', { count: message.sources.length })}</span>
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {message.sources.slice(0, 3).map((source, sIdx) => (
@@ -446,7 +449,7 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
                               <div className="max-w-xs">
                                 <p className="font-medium mb-1 text-sm">{source.sectionTitle || `Chunk ${sIdx + 1}`}</p>
                                 <p className="text-xs opacity-90">{source.content.slice(0, 200)}...</p>
-                                <p className="text-xs mt-1 text-primary-300">Relevance: {Math.round(source.score * 100)}%</p>
+                                <p className="text-xs mt-1 text-primary-300">{t('chat.relevance', { score: Math.round(source.score * 100) })}</p>
                               </div>
                             }
                             placement="top"
@@ -461,7 +464,7 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
                         ))}
                         {message.sources.length > 3 && (
                           <span className="px-2 py-1 text-xs text-muted">
-                            +{message.sources.length - 3} more
+                            {t('chat.more', { count: message.sources.length - 3 })}
                           </span>
                         )}
                       </div>
@@ -505,7 +508,7 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
                   handleSubmit(e);
                 }
               }}
-              placeholder="Ask a question..."
+              placeholder={t('chat.askQuestion')}
               className="input-field w-full resize-none min-h-[48px] max-h-[120px] pr-4 leading-relaxed text-sm"
               rows={1}
               disabled={isStreaming}
@@ -528,7 +531,7 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
         {/* Hide keyboard hint on mobile */}
         {!isMobile && (
           <p className="text-xs text-muted mt-2 text-center">
-            Press <kbd className="px-1.5 py-0.5 bg-surface border border-border rounded text-xs font-mono text-foreground">Enter</kbd> to send
+            {t('common.pressEnterToSend')}
           </p>
         )}
       </form>

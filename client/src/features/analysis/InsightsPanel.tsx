@@ -10,6 +10,7 @@ import {
   CheckCircle,
 } from '@mui/icons-material';
 import { CircularProgress, Tooltip, IconButton } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { papersApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -20,6 +21,7 @@ interface InsightsPanelProps {
 export function InsightsPanel({ paperId }: InsightsPanelProps) {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['analysis', paperId],
@@ -33,9 +35,9 @@ export function InsightsPanel({ paperId }: InsightsPanelProps) {
       const result = await papersApi.getAnalysis(paperId, true);
       // Update the cache with the new result
       queryClient.setQueryData(['analysis', paperId], result);
-      toast.success('Insights regenerated successfully');
+      toast.success(t('insights.regenerateSuccess'));
     } catch (err) {
-      toast.error('Failed to regenerate insights');
+      toast.error(t('insights.regenerateFailed'));
     } finally {
       setIsRegenerating(false);
     }
@@ -45,8 +47,8 @@ export function InsightsPanel({ paperId }: InsightsPanelProps) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <CircularProgress size={32} className="mb-4" />
-        <p className="text-muted">Generating insights...</p>
-        <p className="text-sm text-muted mt-1">This may take a moment</p>
+        <p className="text-muted">{t('insights.generating')}</p>
+        <p className="text-sm text-muted mt-1">{t('insights.mayTakeMoment')}</p>
       </div>
     );
   }
@@ -55,8 +57,8 @@ export function InsightsPanel({ paperId }: InsightsPanelProps) {
     return (
       <div className="text-center py-12">
         <Warning className="text-accent-coral text-4xl mb-3" />
-        <p className="text-muted">Failed to load insights</p>
-        <p className="text-sm text-muted mt-1">Please try again later</p>
+        <p className="text-muted">{t('insights.failedToLoad')}</p>
+        <p className="text-sm text-muted mt-1">{t('insights.tryAgainLater')}</p>
       </div>
     );
   }
@@ -67,7 +69,7 @@ export function InsightsPanel({ paperId }: InsightsPanelProps) {
     return (
       <div className="text-center py-12">
         <AutoAwesome className="text-muted text-4xl mb-3" />
-        <p className="text-muted">No insights available</p>
+        <p className="text-muted">{t('insights.noInsights')}</p>
       </div>
     );
   }
@@ -82,21 +84,21 @@ export function InsightsPanel({ paperId }: InsightsPanelProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {analysis.cached && (
-            <Tooltip title="Loaded from cache - insights were previously generated">
+            <Tooltip title={t('insights.cachedTooltip')}>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs bg-accent-mint/10 text-accent-mint border border-accent-mint/20 rounded-full">
                 <CheckCircle className="w-3 h-3" />
-                Cached
+                {t('insights.cached')}
               </span>
             </Tooltip>
           )}
           {analysis.cached === false && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs bg-primary-500/10 text-primary-400 border border-primary-500/20 rounded-full">
               <AutoAwesome className="w-3 h-3" />
-              Fresh
+              {t('insights.fresh')}
             </span>
           )}
         </div>
-        <Tooltip title="Regenerate insights with AI">
+        <Tooltip title={t('insights.regenerateInsights')}>
           <span>
             <IconButton
               size="small"
@@ -121,7 +123,7 @@ export function InsightsPanel({ paperId }: InsightsPanelProps) {
             <div className="w-8 h-8 rounded-lg bg-primary-500/20 flex items-center justify-center">
               <AutoAwesome className="w-4 h-4 text-primary-400" />
             </div>
-            <h4 className="font-semibold text-foreground">Summary</h4>
+            <h4 className="font-semibold text-foreground">{t('insights.summary')}</h4>
           </div>
           <p className="text-muted leading-relaxed text-sm">
             {analysis.summary}
@@ -136,7 +138,7 @@ export function InsightsPanel({ paperId }: InsightsPanelProps) {
             <div className="w-8 h-8 rounded-lg bg-accent-gold/20 flex items-center justify-center">
               <Lightbulb className="w-4 h-4 text-accent-gold" />
             </div>
-            <h4 className="font-semibold text-foreground">Key Insights</h4>
+            <h4 className="font-semibold text-foreground">{t('insights.keyInsights')}</h4>
           </div>
           <ul className="space-y-2">
             {analysis.keyInsights.map((insight: string, idx: number) => (
@@ -164,7 +166,7 @@ export function InsightsPanel({ paperId }: InsightsPanelProps) {
             <div className="w-8 h-8 rounded-lg bg-accent-teal/20 flex items-center justify-center">
               <Science className="w-4 h-4 text-accent-teal" />
             </div>
-            <h4 className="font-semibold text-foreground">Methodology</h4>
+            <h4 className="font-semibold text-foreground">{t('insights.methodology')}</h4>
           </div>
           <p className="text-muted leading-relaxed text-sm">
             {analysis.methodology}
@@ -179,7 +181,7 @@ export function InsightsPanel({ paperId }: InsightsPanelProps) {
             <div className="w-8 h-8 rounded-lg bg-accent-coral/20 flex items-center justify-center">
               <Warning className="w-4 h-4 text-accent-coral" />
             </div>
-            <h4 className="font-semibold text-foreground">Limitations</h4>
+            <h4 className="font-semibold text-foreground">{t('insights.limitations')}</h4>
           </div>
           <p className="text-muted leading-relaxed text-sm">
             {analysis.limitations}

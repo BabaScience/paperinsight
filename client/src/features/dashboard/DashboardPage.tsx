@@ -7,6 +7,7 @@ import {
   AutoAwesome,
   TrendingUp,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { papersApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { PaperCard } from '@/components/PaperCard';
@@ -28,6 +29,7 @@ const itemVariants = {
 
 export function DashboardPage() {
   const { user } = useAuthStore();
+  const { t } = useTranslation();
 
   const { data: papersData, isLoading } = useQuery({
     queryKey: ['papers', 'recent'],
@@ -40,19 +42,19 @@ export function DashboardPage() {
 
   const stats = [
     {
-      label: 'Total Papers',
+      label: t('dashboard.totalPapers'),
       value: totalPapers,
       icon: Description,
       color: 'from-primary-500 to-primary-600',
     },
     {
-      label: 'Analyzed',
+      label: t('dashboard.analyzed'),
       value: readyPapers,
       icon: AutoAwesome,
       color: 'from-accent-teal to-primary-500',
     },
     {
-      label: 'This Week',
+      label: t('dashboard.thisWeek'),
       value: papers.filter((p: any) => {
         const date = new Date(p.createdAt);
         const week = new Date();
@@ -74,10 +76,10 @@ export function DashboardPage() {
       {/* Header */}
       <motion.div variants={itemVariants}>
         <h1 className="text-3xl font-display font-bold text-theme-primary">
-          Welcome back, {user?.name?.split(' ')[0]}
+          {t('dashboard.welcomeUser', { name: user?.name?.split(' ')[0] })}
         </h1>
         <p className="text-theme-muted mt-1">
-          Here's an overview of your research paper analysis
+          {t('dashboard.overview')}
         </p>
       </motion.div>
 
@@ -108,7 +110,7 @@ export function DashboardPage() {
       {/* Quick Actions */}
       <motion.div variants={itemVariants}>
         <h2 className="text-xl font-display font-semibold text-theme-primary mb-4">
-          Quick Actions
+          {t('dashboard.quickActions')}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Link to="/upload" className="card card-hover group">
@@ -118,10 +120,10 @@ export function DashboardPage() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-theme-primary">
-                  Upload Paper
+                  {t('dashboard.uploadPaper')}
                 </h3>
                 <p className="text-theme-muted text-sm">
-                  Add a new research paper for analysis
+                  {t('dashboard.addNewPaper')}
                 </p>
               </div>
             </div>
@@ -133,10 +135,10 @@ export function DashboardPage() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-theme-primary">
-                  View Library
+                  {t('dashboard.viewLibrary')}
                 </h3>
                 <p className="text-theme-muted text-sm">
-                  Browse all your uploaded papers
+                  {t('dashboard.browseAllPapers')}
                 </p>
               </div>
             </div>
@@ -148,14 +150,14 @@ export function DashboardPage() {
       <motion.div variants={itemVariants}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-display font-semibold text-theme-primary">
-            Recent Papers
+            {t('dashboard.recentPapers')}
           </h2>
           {papers.length > 0 && (
             <Link
               to="/library"
               className="text-primary-400 hover:text-primary-300 text-sm font-medium"
             >
-              View all →
+              {t('common.viewAll')} →
             </Link>
           )}
         </div>
@@ -176,14 +178,14 @@ export function DashboardPage() {
               <Description className="text-theme-muted text-3xl" />
             </div>
             <h3 className="text-lg font-semibold text-theme-secondary mb-2">
-              No papers yet
+              {t('dashboard.noPapers')}
             </h3>
             <p className="text-theme-muted mb-4">
-              Upload your first research paper to get started
+              {t('dashboard.uploadFirstPaper')}
             </p>
             <Link to="/upload" className="btn-primary inline-flex items-center gap-2">
               <Upload className="w-5 h-5" />
-              Upload Paper
+              {t('dashboard.uploadPaper')}
             </Link>
           </div>
         ) : (

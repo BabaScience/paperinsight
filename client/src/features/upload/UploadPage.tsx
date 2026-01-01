@@ -10,6 +10,7 @@ import {
   AutoAwesome,
 } from '@mui/icons-material';
 import { LinearProgress, CircularProgress } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { papersApi } from '@/lib/api';
 import { usePaperStore } from '@/stores/paperStore';
@@ -32,11 +33,12 @@ export function UploadPage() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const navigate = useNavigate();
   const { addPaper } = usePaperStore();
+  const { t } = useTranslation();
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     for (const file of acceptedFiles) {
       if (file.type !== 'application/pdf') {
-        toast.error(`${file.name} is not a PDF file`);
+        toast.error(t('upload.notPdf', { name: file.name }));
         continue;
       }
 
@@ -76,19 +78,19 @@ export function UploadPage() {
           _id: paper.id,
         });
 
-        toast.success(`${file.name} uploaded successfully`);
+        toast.success(t('upload.uploadSuccess', { name: file.name }));
       } catch (error: any) {
         setUploadedFiles((prev) =>
           prev.map((f) =>
             f.file === file
-              ? { ...f, status: 'error', message: error.message || 'Upload failed' }
+              ? { ...f, status: 'error', message: error.message || t('auth.loginFailed') }
               : f
           )
         );
-        toast.error(`Failed to upload ${file.name}`);
+        toast.error(t('upload.uploadFailed', { name: file.name }));
       }
     }
-  }, [addPaper]);
+  }, [addPaper, t]);
 
   // Listen for processing updates
   useEffect(() => {
@@ -106,7 +108,7 @@ export function UploadPage() {
       setUploadedFiles((prev) =>
         prev.map((f) =>
           f.paperId === data.paperId
-            ? { ...f, status: 'ready', message: 'Ready for analysis!' }
+            ? { ...f, status: 'ready', message: t('upload.readyForAnalysis') }
             : f
         )
       );
@@ -116,7 +118,7 @@ export function UploadPage() {
       unsubStatus();
       unsubComplete();
     };
-  }, []);
+  }, [t]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -139,10 +141,10 @@ export function UploadPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-display font-bold text-theme-primary">
-          Upload Papers
+          {t('upload.title')}
         </h1>
         <p className="text-theme-muted mt-1">
-          Add research papers to analyze with AI-powered insights
+          {t('upload.subtitle')}
         </p>
       </div>
 
@@ -174,13 +176,13 @@ export function UploadPage() {
           </motion.div>
 
           <h3 className="text-xl font-semibold text-theme-primary mb-2">
-            {isDragActive ? 'Drop your papers here' : 'Drag & drop papers here'}
+            {isDragActive ? t('upload.dropzoneActive') : t('upload.dropzone')}
           </h3>
           <p className="text-theme-muted mb-4">
-            or click to browse your files
+            {t('upload.browse')}
           </p>
           <p className="text-sm text-theme-muted">
-            Supports PDF files up to 50MB
+            {t('upload.supportsPdf')}
           </p>
 
           {/* Decorative background */}
@@ -201,7 +203,7 @@ export function UploadPage() {
             className="space-y-4"
           >
             <h3 className="text-lg font-semibold text-theme-primary">
-              Uploaded Papers
+              {t('upload.uploadedPapers')}
             </h3>
             
             {uploadedFiles.map((uploadedFile, index) => (
@@ -253,7 +255,7 @@ export function UploadPage() {
                         className="flex items-center gap-2 px-4 py-2 bg-accent-mint/10 text-accent-mint rounded-lg hover:bg-accent-mint/20 transition-colors"
                       >
                         <CheckCircle className="w-5 h-5" />
-                        <span className="text-sm font-medium">View</span>
+                        <span className="text-sm font-medium">{t('common.view')}</span>
                       </button>
                     )}
 
@@ -285,13 +287,13 @@ export function UploadPage() {
           </div>
           <div>
             <h4 className="font-semibold text-theme-primary mb-2">
-              Tips for best results
+              {t('upload.tips')}
             </h4>
             <ul className="text-sm text-theme-muted space-y-1.5">
-              <li>• Upload academic papers in PDF format</li>
-              <li>• Ensure the PDF contains searchable text (not scanned images)</li>
-              <li>• Papers with clear section headers work best for analysis</li>
-              <li>• Processing typically takes 30-60 seconds depending on length</li>
+              <li>• {t('upload.tip1')}</li>
+              <li>• {t('upload.tip2')}</li>
+              <li>• {t('upload.tip3')}</li>
+              <li>• {t('upload.tip4')}</li>
             </ul>
           </div>
         </div>

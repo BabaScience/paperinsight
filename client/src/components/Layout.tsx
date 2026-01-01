@@ -11,20 +11,23 @@ import {
   Person,
 } from '@mui/icons-material';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
 import { ThemeToggle } from './ThemeToggle';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 const navItems = [
-  { path: '/', icon: Home, label: 'Dashboard' },
-  { path: '/library', icon: LibraryBooks, label: 'Library' },
-  { path: '/upload', icon: Upload, label: 'Upload' },
-  { path: '/profile', icon: Person, label: 'Profile' },
+  { path: '/', icon: Home, labelKey: 'nav.dashboard' },
+  { path: '/library', icon: LibraryBooks, labelKey: 'nav.library' },
+  { path: '/upload', icon: Upload, labelKey: 'nav.upload' },
+  { path: '/profile', icon: Person, labelKey: 'nav.profile' },
 ];
 
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleLogout = () => {
     logout();
@@ -92,7 +95,7 @@ export function Layout() {
                       animate={{ opacity: 1 }}
                       className="font-medium whitespace-nowrap"
                     >
-                      {item.label}
+                      {t(item.labelKey)}
                     </motion.span>
                   )}
                 </NavLink>
@@ -101,12 +104,18 @@ export function Layout() {
           </ul>
         </nav>
 
-        {/* Theme Toggle */}
-        <div className="px-3 py-2">
+        {/* Theme & Language Toggles */}
+        <div className="px-3 py-2 space-y-2">
           {sidebarOpen ? (
-            <ThemeToggle fullWidth />
+            <>
+              <ThemeToggle fullWidth />
+              <LanguageSwitcher fullWidth />
+            </>
           ) : (
-            <ThemeToggle compact />
+            <>
+              <ThemeToggle compact />
+              <LanguageSwitcher compact />
+            </>
           )}
         </div>
 
@@ -130,7 +139,7 @@ export function Layout() {
             className="w-full flex items-center gap-3 px-3 py-3 mt-2 text-theme-muted hover:text-accent-coral hover:bg-theme-surface-hover rounded-xl transition-all"
           >
             <Logout className="w-5 h-5 flex-shrink-0" />
-            {sidebarOpen && <span className="font-medium">Logout</span>}
+            {sidebarOpen && <span className="font-medium">{t('nav.logout')}</span>}
           </button>
         </div>
       </motion.aside>

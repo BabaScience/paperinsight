@@ -6,23 +6,29 @@ import { z } from 'zod';
 import { motion } from 'framer-motion';
 import { Visibility, VisibilityOff, AutoAwesome, Email, Lock } from '@mui/icons-material';
 import { CircularProgress } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { ThemeToggleSimple } from '@/components/ThemeToggle';
+import { LanguageSwitcherSimple } from '@/components/LanguageSwitcher';
 
-const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
+type LoginForm = {
+  email: string;
+  password: string;
+};
 
 export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuthStore();
+  const { t } = useTranslation();
+
+  const loginSchema = z.object({
+    email: z.string().email(t('auth.invalidEmail')),
+    password: z.string().min(1, t('auth.passwordRequired')),
+  });
 
   const {
     register,
@@ -38,10 +44,10 @@ export function LoginPage() {
       const response = await authApi.login(data);
       const { user, accessToken, refreshToken } = response.data.data;
       login(user, accessToken, refreshToken);
-      toast.success('Welcome back!');
+      toast.success(t('auth.loginSuccess'));
       navigate('/');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      toast.error(error.response?.data?.message || t('auth.loginFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -49,8 +55,9 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Theme Toggle */}
-      <div className="absolute top-4 right-4 z-50">
+      {/* Theme & Language Toggle */}
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+        <LanguageSwitcherSimple />
         <ThemeToggleSimple />
       </div>
 
@@ -73,17 +80,17 @@ export function LoginPage() {
           </div>
 
           <h1 className="text-3xl font-display font-bold text-theme-primary mb-2">
-            Welcome back
+            {t('auth.welcomeBack')}
           </h1>
           <p className="text-theme-muted mb-8">
-            Sign in to continue analyzing research papers
+            {t('auth.signInToContinue')}
           </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             {/* Email */}
             <div>
               <label className="block text-sm font-medium text-theme-secondary mb-2">
-                Email
+                {t('auth.email')}
               </label>
               <div className="relative">
                 <Email className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-muted w-5 h-5" />
@@ -91,7 +98,7 @@ export function LoginPage() {
                   type="email"
                   {...register('email')}
                   className="input-field pl-12"
-                  placeholder="you@example.com"
+                  placeholder={t('auth.emailPlaceholder')}
                 />
               </div>
               {errors.email && (
@@ -104,7 +111,7 @@ export function LoginPage() {
             {/* Password */}
             <div>
               <label className="block text-sm font-medium text-theme-secondary mb-2">
-                Password
+                {t('auth.password')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-muted w-5 h-5" />
@@ -112,7 +119,7 @@ export function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   {...register('password')}
                   className="input-field pl-12 pr-12"
-                  placeholder="••••••••"
+                  placeholder={t('auth.passwordPlaceholder')}
                 />
                 <button
                   type="button"
@@ -137,18 +144,18 @@ export function LoginPage() {
               {isLoading ? (
                 <CircularProgress size={20} color="inherit" />
               ) : (
-                'Sign In'
+                t('auth.login')
               )}
             </button>
           </form>
 
           <p className="text-center text-theme-muted mt-6">
-            Don't have an account?{' '}
+            {t('auth.noAccount')}{' '}
             <Link
               to="/register"
               className="text-primary-400 hover:text-primary-300 font-medium"
             >
-              Create one
+              {t('auth.createOne')}
             </Link>
           </p>
         </motion.div>
@@ -169,12 +176,11 @@ export function LoginPage() {
             <AutoAwesome className="text-white text-6xl" />
           </div>
           <h2 className="text-4xl font-display font-bold text-theme-primary mb-4 text-balance">
-            Unlock the Power of
-            <span className="gradient-text"> AI Research Analysis</span>
+            {t('auth.unlockPower')}
+            <span className="gradient-text"> {t('auth.aiResearchAnalysis')}</span>
           </h2>
           <p className="text-theme-secondary text-lg max-w-md mx-auto">
-            Transform complex research papers into actionable insights with our
-            advanced RAG-powered analysis platform.
+            {t('auth.transformPapers')}
           </p>
         </motion.div>
 

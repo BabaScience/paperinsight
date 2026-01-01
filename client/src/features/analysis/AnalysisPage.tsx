@@ -21,6 +21,7 @@ import {
   Lightbulb,
 } from '@mui/icons-material';
 import { Chip, CircularProgress, Tabs, Tab, Collapse } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { papersApi } from '@/lib/api';
 import { ChatInterface } from './ChatInterface';
 import { InsightsPanel } from './InsightsPanel';
@@ -100,6 +101,7 @@ function SectionCard({ section, index }: { section: Section; index: number }) {
 export function AnalysisPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(0);
   const [processingMessage, setProcessingMessage] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -171,12 +173,12 @@ export function AnalysisPage() {
   if (!paper) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-3rem)]">
-        <p className="text-muted text-lg">Paper not found</p>
+        <p className="text-muted text-lg">{t('analysis.paperNotFound')}</p>
         <button
           onClick={() => navigate('/library')}
           className="btn-primary mt-4"
         >
-          Go to Library
+          {t('analysis.goToLibrary')}
         </button>
       </div>
     );
@@ -232,13 +234,13 @@ export function AnalysisPage() {
                   {paper.pageCount && (
                     <span className="flex items-center gap-1">
                       <Description className="w-4 h-4" />
-                      {paper.pageCount} pages
+                      {t('analysis.pages', { count: paper.pageCount })}
                     </span>
                   )}
                   {paper.chunkCount && (
                     <span className="hidden sm:flex items-center gap-1">
                       <Layers className="w-4 h-4" />
-                      {paper.chunkCount} chunks
+                      {t('analysis.chunks', { count: paper.chunkCount })}
                     </span>
                   )}
                 </div>
@@ -249,7 +251,7 @@ export function AnalysisPage() {
                 {isReady && (
                   <Chip
                     icon={<CheckCircle className="w-4 h-4" />}
-                    label="Ready"
+                    label={t('library.ready')}
                     color="success"
                     variant="outlined"
                     size="small"
@@ -258,7 +260,7 @@ export function AnalysisPage() {
                 {isProcessing && (
                   <Chip
                     icon={<Pending className="w-4 h-4" />}
-                    label="Processing"
+                    label={t('library.processing')}
                     color="warning"
                     variant="outlined"
                     size="small"
@@ -267,7 +269,7 @@ export function AnalysisPage() {
                 {isFailed && (
                   <Chip
                     icon={<Error className="w-4 h-4" />}
-                    label="Failed"
+                    label={t('library.failed')}
                     color="error"
                     variant="outlined"
                     size="small"
@@ -289,8 +291,8 @@ export function AnalysisPage() {
           <div className="flex items-center gap-4">
             <CircularProgress size={24} />
             <div>
-              <p className="font-medium text-foreground">Processing paper...</p>
-              <p className="text-sm text-muted">{processingMessage || 'Please wait while we analyze your paper'}</p>
+              <p className="font-medium text-foreground">{t('analysis.processingPaper')}</p>
+              <p className="text-sm text-muted">{processingMessage || t('analysis.pleaseWait')}</p>
             </div>
           </div>
           
@@ -314,9 +316,9 @@ export function AnalysisPage() {
             })}
           </div>
           <div className="flex justify-between mt-1 text-xs text-muted">
-            <span>Parsing</span>
-            <span>Chunking</span>
-            <span>Embedding</span>
+            <span>{t('analysis.parsing')}</span>
+            <span>{t('analysis.chunking')}</span>
+            <span>{t('analysis.embedding')}</span>
           </div>
         </motion.div>
       )}
@@ -327,8 +329,8 @@ export function AnalysisPage() {
           <div className="flex items-center gap-4">
             <Error className="text-accent-coral" />
             <div>
-              <p className="font-medium text-foreground">Processing failed</p>
-              <p className="text-sm text-muted">{paper.error || 'An error occurred while processing this paper'}</p>
+              <p className="font-medium text-foreground">{t('analysis.processingFailed')}</p>
+              <p className="text-sm text-muted">{paper.error || t('analysis.errorOccurred')}</p>
             </div>
           </div>
         </div>
@@ -346,11 +348,11 @@ export function AnalysisPage() {
               variant="scrollable"
               scrollButtons="auto"
             >
-              <Tab label="Insights" />
+              <Tab label={t('analysis.tabs.insights')} />
               <Tab 
                 label={
                   <span className="flex items-center gap-1.5">
-                    Sections
+                    {t('analysis.tabs.sections')}
                     {sections.length > 0 && (
                       <span className="px-1.5 py-0.5 bg-primary-500/20 text-primary-400 text-xs rounded-full">
                         {sections.length}
@@ -363,7 +365,7 @@ export function AnalysisPage() {
                 label={
                   <span className="flex items-center gap-1.5">
                     <BubbleChart className="w-4 h-4" />
-                    Visuals
+                    {t('analysis.tabs.visuals')}
                   </span>
                 } 
               />
@@ -371,7 +373,7 @@ export function AnalysisPage() {
                 label={
                   <span className="flex items-center gap-1.5">
                     <Lightbulb className="w-4 h-4" />
-                    Ideas
+                    {t('analysis.tabs.ideas')}
                   </span>
                 } 
               />
@@ -406,10 +408,9 @@ export function AnalysisPage() {
                         <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-surface/50 flex items-center justify-center">
                           <Article className="text-muted text-3xl" />
                         </div>
-                        <p className="text-muted font-medium mb-2">No sections extracted</p>
+                        <p className="text-muted font-medium mb-2">{t('sections.noSections')}</p>
                         <p className="text-sm text-muted max-w-xs mx-auto">
-                          The PDF structure didn't match common section patterns. 
-                          You can still ask questions about the paper using the chat.
+                          {t('sections.noSectionsDescription')}
                         </p>
                       </div>
                     )}
@@ -444,7 +445,7 @@ export function AnalysisPage() {
                 <details className="group">
                   <summary className="cursor-pointer text-sm font-medium text-foreground flex items-center gap-2">
                     <ExpandMore className="w-4 h-4 transition-transform group-open:rotate-180" />
-                    Abstract
+                    {t('analysis.abstract')}
                   </summary>
                   <p className="text-sm text-muted leading-relaxed mt-2 pl-6">
                     {paper.abstract}
@@ -466,7 +467,7 @@ export function AnalysisPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <CircularProgress className="mb-4" />
-            <p className="text-muted">Loading paper...</p>
+            <p className="text-muted">{t('analysis.loadingPaper')}</p>
           </div>
         </div>
       )}
@@ -508,7 +509,7 @@ export function AnalysisPage() {
             transition={{ delay: 0.5 }}
             className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-surface border border-border rounded-lg text-sm font-medium text-foreground whitespace-nowrap shadow-lg"
           >
-            Ask AI
+            {t('analysis.askAI')}
           </motion.span>
         </motion.button>
       )}

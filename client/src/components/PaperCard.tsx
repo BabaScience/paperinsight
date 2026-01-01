@@ -8,6 +8,7 @@ import {
   Pending,
   AutoAwesome,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import type { Paper } from '@/stores/paperStore';
 
 interface PaperCardProps {
@@ -17,37 +18,39 @@ interface PaperCardProps {
 const statusConfig = {
   uploading: {
     icon: Pending,
-    label: 'Uploading',
+    labelKey: 'paperCard.status.uploading',
     color: 'warning' as const,
     bgClass: 'bg-accent-gold/10 text-accent-gold',
   },
   processing: {
     icon: AutoAwesome,
-    label: 'Processing',
+    labelKey: 'paperCard.status.processing',
     color: 'info' as const,
     bgClass: 'bg-primary-500/10 text-primary-400',
   },
   ready: {
     icon: CheckCircle,
-    label: 'Ready',
+    labelKey: 'paperCard.status.ready',
     color: 'success' as const,
     bgClass: 'bg-accent-mint/10 text-accent-mint',
   },
   failed: {
     icon: Error,
-    label: 'Failed',
+    labelKey: 'paperCard.status.failed',
     color: 'error' as const,
     bgClass: 'bg-accent-coral/10 text-accent-coral',
   },
 };
 
 export function PaperCard({ paper }: PaperCardProps) {
+  const { t, i18n } = useTranslation();
   const status = statusConfig[paper.status];
   const StatusIcon = status.icon;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    const locale = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
+    return date.toLocaleDateString(locale, {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -93,7 +96,7 @@ export function PaperCard({ paper }: PaperCardProps) {
           </div>
           <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${status.bgClass}`}>
             <StatusIcon className="w-3.5 h-3.5" />
-            {status.label}
+            {t(status.labelKey)}
           </div>
         </div>
 
@@ -112,7 +115,7 @@ export function PaperCard({ paper }: PaperCardProps) {
                   }}
                 />
               </div>
-              <span>Processing...</span>
+              <span>{t('paperCard.processing')}</span>
             </div>
           </div>
         )}

@@ -17,6 +17,7 @@ import {
   TrendingUp,
 } from '@mui/icons-material';
 import { CircularProgress, Tooltip, Chip, Collapse } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { papersApi } from '@/lib/api';
 import { useProfileStore } from '@/stores/profileStore';
 
@@ -63,6 +64,7 @@ const DIFFICULTY_CONFIG = {
 
 function IdeaCard({ idea, index }: { idea: ImplementationIdea; index: number }) {
   const [expanded, setExpanded] = useState(false);
+  const { t } = useTranslation();
   const diffConfig = DIFFICULTY_CONFIG[idea.difficulty];
 
   return (
@@ -118,7 +120,7 @@ function IdeaCard({ idea, index }: { idea: ImplementationIdea; index: number }) 
           <div>
             <h5 className="text-sm font-medium text-foreground flex items-center gap-2 mb-2">
               <TrendingUp className="w-4 h-4 text-primary-400" />
-              Implementation Steps
+              {t('ideas.implementationSteps')}
             </h5>
             <ol className="space-y-2">
               {idea.steps.map((step, idx) => (
@@ -137,7 +139,7 @@ function IdeaCard({ idea, index }: { idea: ImplementationIdea; index: number }) 
             <div>
               <h5 className="text-sm font-medium text-foreground flex items-center gap-2 mb-2">
                 <Code className="w-4 h-4 text-accent-teal" />
-                Suggested Tools
+                {t('ideas.suggestedTools')}
               </h5>
               <div className="flex flex-wrap gap-1.5">
                 {idea.tools.map((tool, idx) => (
@@ -162,7 +164,7 @@ function IdeaCard({ idea, index }: { idea: ImplementationIdea; index: number }) 
             <div>
               <h5 className="text-sm font-medium text-foreground flex items-center gap-2 mb-2">
                 <Psychology className="w-4 h-4 text-accent-violet" />
-                Related Concepts from Paper
+                {t('ideas.relatedConcepts')}
               </h5>
               <div className="flex flex-wrap gap-1.5">
                 {idea.relatedConcepts.map((concept, idx) => (
@@ -190,6 +192,7 @@ export function IdeasPanel({ paperId }: IdeasPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [cached, setCached] = useState(false);
   const { profile } = useProfileStore();
+  const { t } = useTranslation();
 
   useEffect(() => {
     loadIdeas();
@@ -212,7 +215,7 @@ export function IdeasPanel({ paperId }: IdeasPanelProps) {
       setCached(ideasData.cached);
     } catch (err) {
       console.error('Failed to load ideas:', err);
-      setError('Failed to generate implementation ideas. Please try again.');
+      setError(t('ideas.failedToGenerate'));
     } finally {
       setIsLoading(false);
       setIsRegenerating(false);
@@ -238,11 +241,11 @@ export function IdeasPanel({ paperId }: IdeasPanelProps) {
             transition={{ duration: 1.5, repeat: Infinity }}
           />
         </div>
-        <p className="mt-4 text-foreground font-medium">Generating personalized ideas...</p>
+        <p className="mt-4 text-foreground font-medium">{t('ideas.generating')}</p>
         <p className="text-sm text-muted mt-1">
           {hasProfile 
-            ? 'Tailoring suggestions to your profile' 
-            : 'Creating general implementation ideas'}
+            ? t('ideas.tailoringToProfile') 
+            : t('ideas.creatingGeneral')}
         </p>
       </div>
     );
@@ -254,14 +257,14 @@ export function IdeasPanel({ paperId }: IdeasPanelProps) {
         <div className="w-16 h-16 rounded-2xl bg-accent-coral/10 border border-accent-coral/30 flex items-center justify-center">
           <ErrorIcon className="text-accent-coral text-2xl" />
         </div>
-        <p className="mt-4 text-foreground font-medium">Failed to generate ideas</p>
+        <p className="mt-4 text-foreground font-medium">{t('ideas.failedTitle')}</p>
         <p className="text-sm text-muted mt-1 text-center max-w-md">{error}</p>
         <button
           onClick={handleRegenerate}
           className="mt-4 btn-secondary flex items-center gap-2"
         >
           <Refresh className="w-4 h-4" />
-          Try Again
+          {t('ideas.tryAgain')}
         </button>
       </div>
     );
@@ -273,18 +276,18 @@ export function IdeasPanel({ paperId }: IdeasPanelProps) {
         <div className="w-16 h-16 rounded-2xl bg-surface border border-border flex items-center justify-center">
           <Lightbulb className="text-muted text-2xl" />
         </div>
-        <p className="mt-4 text-foreground font-medium">No ideas generated yet</p>
+        <p className="mt-4 text-foreground font-medium">{t('ideas.noIdeas')}</p>
         <p className="text-sm text-muted mt-1 text-center max-w-md">
           {hasProfile 
-            ? 'Generate personalized implementation ideas based on your profile.'
-            : 'Add your interests and projects to your profile for personalized suggestions.'}
+            ? t('ideas.noIdeasWithProfile')
+            : t('ideas.noIdeasNoProfile')}
         </p>
         <button
           onClick={handleRegenerate}
           className="mt-4 btn-primary flex items-center gap-2"
         >
           <AutoAwesome className="w-4 h-4" />
-          Generate Ideas
+          {t('ideas.generateIdeas')}
         </button>
       </div>
     );
@@ -299,23 +302,23 @@ export function IdeasPanel({ paperId }: IdeasPanelProps) {
             <Lightbulb className="text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">Implementation Ideas</h3>
+            <h3 className="font-semibold text-foreground">{t('ideas.title')}</h3>
             <p className="text-sm text-muted">
-              {ideas.length} idea{ideas.length !== 1 ? 's' : ''} personalized for you
+              {t('ideas.ideaCount', { count: ideas.length })}
             </p>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
           {cached && (
-            <Tooltip title="Loaded from cache">
+            <Tooltip title={t('ideas.cachedTooltip')}>
               <span className="flex items-center gap-1 px-2 py-1 text-xs bg-accent-mint/10 text-accent-mint rounded-lg">
                 <CheckCircle className="w-3 h-3" />
-                Cached
+                {t('ideas.cached')}
               </span>
             </Tooltip>
           )}
-          <Tooltip title="Regenerate ideas">
+          <Tooltip title={t('ideas.regenerate')}>
             <button
               onClick={handleRegenerate}
               disabled={isRegenerating}
@@ -340,7 +343,7 @@ export function IdeasPanel({ paperId }: IdeasPanelProps) {
         >
           <div className="flex items-center gap-2 text-sm text-primary-400 mb-2">
             <Person className="w-4 h-4" />
-            <span className="font-medium">Tailored to your profile</span>
+            <span className="font-medium">{t('ideas.tailoredToProfile')}</span>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             {userContext.researchField && (
@@ -359,7 +362,7 @@ export function IdeasPanel({ paperId }: IdeasPanelProps) {
             {userContext.currentProjects && (
               <span className="flex items-center gap-1 px-2 py-1 bg-surface rounded-lg text-muted">
                 <Work className="w-3 h-3" />
-                Projects: Active
+                {t('ideas.projectsActive')}
               </span>
             )}
           </div>
@@ -376,7 +379,7 @@ export function IdeasPanel({ paperId }: IdeasPanelProps) {
           <div className="flex items-center gap-2 text-sm text-accent-gold">
             <Person className="w-4 h-4" />
             <span>
-              <strong>Tip:</strong> Complete your profile to get more personalized ideas
+              <strong>{t('ideas.tip')}:</strong> {t('ideas.completeProfile')}
             </span>
           </div>
         </motion.div>
@@ -393,13 +396,13 @@ export function IdeasPanel({ paperId }: IdeasPanelProps) {
 
       {/* Difficulty Legend */}
       <div className="pt-4 border-t border-border/50">
-        <p className="text-xs text-muted mb-2">Difficulty levels:</p>
+        <p className="text-xs text-muted mb-2">{t('ideas.difficultyLevels')}:</p>
         <div className="flex flex-wrap gap-3">
           {Object.entries(DIFFICULTY_CONFIG).map(([key, config]) => (
             <div key={key} className="flex items-center gap-1.5">
               <span className="text-sm">{config.icon}</span>
               <span className="text-xs text-muted">
-                {config.label} - {config.description}
+                {t(`ideas.difficulty.${key}`)} - {t(`ideas.difficultyDesc.${key}`)}
               </span>
             </div>
           ))}

@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LightMode, DarkMode, SettingsBrightness } from '@mui/icons-material';
 import { Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '@/stores/themeStore';
 
 interface ThemeToggleProps {
@@ -10,14 +11,15 @@ interface ThemeToggleProps {
 }
 
 const themeOptions = [
-  { value: 'light' as const, label: 'Light', icon: LightMode },
-  { value: 'dark' as const, label: 'Dark', icon: DarkMode },
-  { value: 'system' as const, label: 'System', icon: SettingsBrightness },
+  { value: 'light' as const, labelKey: 'themeToggle.light', icon: LightMode },
+  { value: 'dark' as const, labelKey: 'themeToggle.dark', icon: DarkMode },
+  { value: 'system' as const, labelKey: 'themeToggle.system', icon: SettingsBrightness },
 ];
 
 export function ThemeToggle({ compact = false, fullWidth = false }: ThemeToggleProps) {
   const { mode, resolvedMode, setMode } = useThemeStore();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const { t } = useTranslation();
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -49,7 +51,7 @@ export function ThemeToggle({ compact = false, fullWidth = false }: ThemeToggleP
               : 'px-3 py-2.5 hover:bg-theme-surface-hover border border-theme-border'
           }
         `}
-        aria-label="Toggle theme"
+        aria-label={t('themeToggle.toggleTheme')}
       >
         <AnimatePresence mode="wait">
           <motion.div
@@ -71,7 +73,7 @@ export function ThemeToggle({ compact = false, fullWidth = false }: ThemeToggleP
         </AnimatePresence>
         {!compact && (
           <span className="text-sm font-medium text-theme-secondary capitalize flex-1 text-left">
-            {mode === 'system' ? `System (${resolvedMode})` : mode}
+            {mode === 'system' ? `${t('themeToggle.system')} (${t(`themeToggle.${resolvedMode}`)})` : t(`themeToggle.${mode}`)}
           </span>
         )}
       </motion.button>
@@ -109,7 +111,7 @@ export function ThemeToggle({ compact = false, fullWidth = false }: ThemeToggleP
               />
             </ListItemIcon>
             <ListItemText 
-              primary={option.label}
+              primary={t(option.labelKey)}
               primaryTypographyProps={{
                 fontSize: '0.875rem',
                 fontWeight: mode === option.value ? 600 : 400,
@@ -125,6 +127,7 @@ export function ThemeToggle({ compact = false, fullWidth = false }: ThemeToggleP
 // Simple toggle version (just toggles between light/dark)
 export function ThemeToggleSimple() {
   const { resolvedMode, setMode } = useThemeStore();
+  const { t } = useTranslation();
 
   const toggle = () => {
     setMode(resolvedMode === 'dark' ? 'light' : 'dark');
@@ -136,7 +139,7 @@ export function ThemeToggleSimple() {
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
       className="p-2 rounded-lg hover:bg-theme-surface-hover transition-colors"
-      aria-label="Toggle theme"
+      aria-label={t('themeToggle.toggleTheme')}
     >
       <AnimatePresence mode="wait">
         <motion.div

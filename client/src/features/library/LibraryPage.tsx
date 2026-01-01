@@ -18,6 +18,7 @@ import {
   Menu,
   MenuItem,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { papersApi } from '@/lib/api';
 import { PaperCard } from '@/components/PaperCard';
@@ -32,6 +33,7 @@ export function LibraryPage() {
     paper: null,
   });
   const [filterAnchor, setFilterAnchor] = useState<null | HTMLElement>(null);
+  const { t } = useTranslation();
   
   const queryClient = useQueryClient();
 
@@ -44,11 +46,11 @@ export function LibraryPage() {
     mutationFn: (id: string) => papersApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['papers'] });
-      toast.success('Paper deleted successfully');
+      toast.success(t('library.deleteSuccess'));
       setDeleteDialog({ open: false, paper: null });
     },
     onError: () => {
-      toast.error('Failed to delete paper');
+      toast.error(t('library.deleteFailed'));
     },
   });
 
@@ -78,10 +80,10 @@ export function LibraryPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-display font-bold text-theme-primary">
-            Paper Library
+            {t('library.title')}
           </h1>
           <p className="text-theme-muted mt-1">
-            {papers.length} paper{papers.length !== 1 ? 's' : ''} in your library
+            {t('library.paperCount', { count: papers.length })}
           </p>
         </div>
       </div>
@@ -92,7 +94,7 @@ export function LibraryPage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-muted" />
           <input
             type="text"
-            placeholder="Search papers by title, author, or filename..."
+            placeholder={t('library.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="input-field pl-12 w-full"
@@ -118,7 +120,7 @@ export function LibraryPage() {
               }}
               selected={!statusFilter}
             >
-              All Status
+              {t('library.allStatus')}
             </MenuItem>
             <MenuItem
               onClick={() => {
@@ -127,7 +129,7 @@ export function LibraryPage() {
               }}
               selected={statusFilter === 'ready'}
             >
-              Ready
+              {t('library.ready')}
             </MenuItem>
             <MenuItem
               onClick={() => {
@@ -136,7 +138,7 @@ export function LibraryPage() {
               }}
               selected={statusFilter === 'processing'}
             >
-              Processing
+              {t('library.processing')}
             </MenuItem>
             <MenuItem
               onClick={() => {
@@ -145,7 +147,7 @@ export function LibraryPage() {
               }}
               selected={statusFilter === 'failed'}
             >
-              Failed
+              {t('library.failed')}
             </MenuItem>
           </Menu>
           
@@ -181,8 +183,8 @@ export function LibraryPage() {
         <div className="card text-center py-16">
           <p className="text-theme-muted text-lg">
             {searchQuery || statusFilter
-              ? 'No papers match your search criteria'
-              : 'No papers in your library yet'}
+              ? t('library.noMatch')
+              : t('library.empty')}
           </p>
         </div>
       ) : (
@@ -218,23 +220,22 @@ export function LibraryPage() {
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, paper: null })}
       >
-        <DialogTitle>Delete Paper</DialogTitle>
+        <DialogTitle>{t('library.deletePaper')}</DialogTitle>
         <DialogContent>
           <p className="text-theme-secondary">
-            Are you sure you want to delete "{deleteDialog.paper?.title || deleteDialog.paper?.fileName}"?
-            This action cannot be undone.
+            {t('library.deleteConfirm', { title: deleteDialog.paper?.title || deleteDialog.paper?.fileName })}
           </p>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialog({ open: false, paper: null })}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={() => deleteDialog.paper && deleteMutation.mutate(deleteDialog.paper._id)}
             color="error"
             variant="contained"
           >
-            Delete
+            {t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>

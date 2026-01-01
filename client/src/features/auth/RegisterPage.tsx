@@ -13,30 +13,38 @@ import {
   Person,
 } from '@mui/icons-material';
 import { CircularProgress } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { ThemeToggleSimple } from '@/components/ThemeToggle';
+import { LanguageSwitcherSimple } from '@/components/LanguageSwitcher';
 
-const registerSchema = z
-  .object({
-    name: z.string().min(2, 'Name must be at least 2 characters'),
-    email: z.string().email('Invalid email address'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  });
-
-type RegisterForm = z.infer<typeof registerSchema>;
+type RegisterForm = {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+};
 
 export function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuthStore();
+  const { t } = useTranslation();
+
+  const registerSchema = z
+    .object({
+      name: z.string().min(2, t('auth.nameMin')),
+      email: z.string().email(t('auth.invalidEmail')),
+      password: z.string().min(8, t('auth.passwordMin')),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t('auth.passwordMismatch'),
+      path: ['confirmPassword'],
+    });
 
   const {
     register,
@@ -56,10 +64,10 @@ export function RegisterPage() {
       });
       const { user, accessToken, refreshToken } = response.data.data;
       login(user, accessToken, refreshToken);
-      toast.success('Account created successfully!');
+      toast.success(t('auth.registerSuccess'));
       navigate('/');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Registration failed');
+      toast.error(error.response?.data?.message || t('auth.registerFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -67,8 +75,9 @@ export function RegisterPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Theme Toggle */}
-      <div className="absolute top-4 right-4 z-50">
+      {/* Theme & Language Toggle */}
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+        <LanguageSwitcherSimple />
         <ThemeToggleSimple />
       </div>
 
@@ -87,12 +96,10 @@ export function RegisterPage() {
             <AutoAwesome className="text-white text-6xl" />
           </div>
           <h2 className="text-4xl font-display font-bold text-theme-primary mb-4 text-balance">
-            Start Your
-            <span className="gradient-text"> Research Journey</span>
+            {t('auth.startResearchJourney')}
           </h2>
           <p className="text-theme-secondary text-lg max-w-md mx-auto">
-            Join thousands of researchers who are accelerating their paper
-            analysis with AI-powered insights.
+            {t('auth.joinResearchers')}
           </p>
         </motion.div>
 
@@ -120,17 +127,17 @@ export function RegisterPage() {
           </div>
 
           <h1 className="text-3xl font-display font-bold text-theme-primary mb-2">
-            Create an account
+            {t('auth.createAccount')}
           </h1>
           <p className="text-theme-muted mb-8">
-            Get started with AI-powered research paper analysis
+            {t('auth.getStarted')}
           </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             {/* Name */}
             <div>
               <label className="block text-sm font-medium text-theme-secondary mb-2">
-                Full Name
+                {t('auth.fullName')}
               </label>
               <div className="relative">
                 <Person className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-muted w-5 h-5" />
@@ -138,7 +145,7 @@ export function RegisterPage() {
                   type="text"
                   {...register('name')}
                   className="input-field pl-12"
-                  placeholder="John Doe"
+                  placeholder={t('auth.namePlaceholder')}
                 />
               </div>
               {errors.name && (
@@ -151,7 +158,7 @@ export function RegisterPage() {
             {/* Email */}
             <div>
               <label className="block text-sm font-medium text-theme-secondary mb-2">
-                Email
+                {t('auth.email')}
               </label>
               <div className="relative">
                 <Email className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-muted w-5 h-5" />
@@ -159,7 +166,7 @@ export function RegisterPage() {
                   type="email"
                   {...register('email')}
                   className="input-field pl-12"
-                  placeholder="you@example.com"
+                  placeholder={t('auth.emailPlaceholder')}
                 />
               </div>
               {errors.email && (
@@ -172,7 +179,7 @@ export function RegisterPage() {
             {/* Password */}
             <div>
               <label className="block text-sm font-medium text-theme-secondary mb-2">
-                Password
+                {t('auth.password')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-muted w-5 h-5" />
@@ -180,7 +187,7 @@ export function RegisterPage() {
                   type={showPassword ? 'text' : 'password'}
                   {...register('password')}
                   className="input-field pl-12 pr-12"
-                  placeholder="••••••••"
+                  placeholder={t('auth.passwordPlaceholder')}
                 />
                 <button
                   type="button"
@@ -200,7 +207,7 @@ export function RegisterPage() {
             {/* Confirm Password */}
             <div>
               <label className="block text-sm font-medium text-theme-secondary mb-2">
-                Confirm Password
+                {t('auth.confirmPassword')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-muted w-5 h-5" />
@@ -208,7 +215,7 @@ export function RegisterPage() {
                   type={showPassword ? 'text' : 'password'}
                   {...register('confirmPassword')}
                   className="input-field pl-12"
-                  placeholder="••••••••"
+                  placeholder={t('auth.passwordPlaceholder')}
                 />
               </div>
               {errors.confirmPassword && (
@@ -226,18 +233,18 @@ export function RegisterPage() {
               {isLoading ? (
                 <CircularProgress size={20} color="inherit" />
               ) : (
-                'Create Account'
+                t('auth.register')
               )}
             </button>
           </form>
 
           <p className="text-center text-theme-muted mt-6">
-            Already have an account?{' '}
+            {t('auth.hasAccount')}{' '}
             <Link
               to="/login"
               className="text-primary-400 hover:text-primary-300 font-medium"
             >
-              Sign in
+              {t('auth.signIn')}
             </Link>
           </p>
         </motion.div>
