@@ -309,6 +309,71 @@ class PaperController {
       next(error);
     }
   }
+
+  async getVisuals(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const paper = await Paper.findById(req.params.id);
+
+      if (!paper) {
+        throw new NotFoundError('Paper not found');
+      }
+
+      if (paper.userId.toString() !== req.userId) {
+        throw new ForbiddenError('Access denied');
+      }
+
+      if (paper.status !== 'ready') {
+        throw new BadRequestError('Paper is not ready for visual generation');
+      }
+
+      // Check if regeneration is requested
+      const forceRegenerate = req.query.regenerate === 'true';
+      const visuals = await ragService.getVisuals(req.params.id!, forceRegenerate);
+
+      res.json({
+        status: 'success',
+        data: { visuals },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getIdeas(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // Fetch paper and user profile in parallel
+      const [paper, user] = await Promise.all([
+        Paper.findById(req.params.id),
+        User.findById(req.userId).select('profile').lean(),
+      ]);
+
+      if (!paper) {
+        throw new NotFoundError('Paper not found');
+      }
+
+      if (paper.userId.toString() !== req.userId) {
+        throw new ForbiddenError('Access denied');
+      }
+
+      if (paper.status !== 'ready') {
+        throw new BadRequestError('Paper is not ready for idea generation');
+      }
+
+      // Extract user profile for personalized ideas
+      const userProfile = user?.profile;
+
+      // Check if regeneration is requested
+      const forceRegenerate = req.query.regenerate === 'true';
+      const ideas = await ragService.getIdeas(req.params.id!, userProfile, forceRegenerate);
+
+      res.json({
+        status: 'success',
+        data: { ideas },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const paperController = new PaperController();

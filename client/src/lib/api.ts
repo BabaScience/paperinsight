@@ -132,6 +132,12 @@ export const papersApi = {
   
   getConversation: (id: string) =>
     api.get(`/papers/${id}/conversation`),
+  
+  getVisuals: (id: string, regenerate = false) =>
+    api.get(`/papers/${id}/visuals`, { params: regenerate ? { regenerate: 'true' } : {} }),
+  
+  getIdeas: (id: string, regenerate = false) =>
+    api.get(`/papers/${id}/ideas`, { params: regenerate ? { regenerate: 'true' } : {} }),
 };
 
 

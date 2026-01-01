@@ -17,11 +17,15 @@ import {
   SmartToy,
   KeyboardArrowDown,
   Chat,
+  BubbleChart,
+  Lightbulb,
 } from '@mui/icons-material';
 import { Chip, CircularProgress, Tabs, Tab, Collapse } from '@mui/material';
 import { papersApi } from '@/lib/api';
 import { ChatInterface } from './ChatInterface';
 import { InsightsPanel } from './InsightsPanel';
+import { VisualsPanel } from './VisualsPanel';
+import { IdeasPanel } from './IdeasPanel';
 import {
   subscribeToPaper,
   unsubscribeFromPaper,
@@ -339,6 +343,8 @@ export function AnalysisPage() {
               value={activeTab}
               onChange={(_, v) => setActiveTab(v)}
               className="border-b border-border/50 flex-shrink-0"
+              variant="scrollable"
+              scrollButtons="auto"
             >
               <Tab label="Insights" />
               <Tab 
@@ -350,6 +356,22 @@ export function AnalysisPage() {
                         {sections.length}
                       </span>
                     )}
+                  </span>
+                } 
+              />
+              <Tab 
+                label={
+                  <span className="flex items-center gap-1.5">
+                    <BubbleChart className="w-4 h-4" />
+                    Visuals
+                  </span>
+                } 
+              />
+              <Tab 
+                label={
+                  <span className="flex items-center gap-1.5">
+                    <Lightbulb className="w-4 h-4" />
+                    Ideas
                   </span>
                 } 
               />
@@ -391,6 +413,26 @@ export function AnalysisPage() {
                         </p>
                       </div>
                     )}
+                  </motion.div>
+                )}
+                {activeTab === 2 && (
+                  <motion.div
+                    key="visuals"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                  >
+                    <VisualsPanel paperId={id!} />
+                  </motion.div>
+                )}
+                {activeTab === 3 && (
+                  <motion.div
+                    key="ideas"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                  >
+                    <IdeasPanel paperId={id!} />
                   </motion.div>
                 )}
               </AnimatePresence>

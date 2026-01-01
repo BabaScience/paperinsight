@@ -61,6 +61,20 @@ paperRouter.get(
   paperController.getConversation
 );
 
+// Get paper visuals (Mermaid diagrams)
+paperRouter.get(
+  '/:id/visuals',
+  validate(paperSchemas.getById),
+  paperController.getVisuals
+);
+
+// Get personalized implementation ideas
+paperRouter.get(
+  '/:id/ideas',
+  validate(paperSchemas.getById),
+  paperController.getIdeas
+);
+
 
 
 

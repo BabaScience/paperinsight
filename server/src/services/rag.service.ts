@@ -3,7 +3,7 @@ import { env } from '../config/env.js';
 import { embeddingService } from './embedding.service.js';
 import { vectorService } from './vector.service.js';
 import { Chunk } from '../models/chunk.model.js';
-import { Paper } from '../models/paper.model.js';
+import { Paper, IMermaidDiagram, MermaidDiagramType, IImplementationIdea } from '../models/paper.model.js';
 import { IUserProfile } from '../models/user.model.js';
 
 const openai = new OpenAI({
@@ -32,6 +32,21 @@ interface AnalysisResult {
   methodology?: string;
   limitations?: string;
   cached?: boolean;
+}
+
+interface VisualsResult {
+  diagrams: IMermaidDiagram[];
+  cached: boolean;
+}
+
+interface IdeasResult {
+  ideas: IImplementationIdea[];
+  userContext: {
+    researchField?: string;
+    interests?: string[];
+    currentProjects?: string;
+  };
+  cached: boolean;
 }
 
 const BASE_SYSTEM_PROMPT = `You are an expert research paper analyst. Your task is to answer questions about academic papers based on the provided context.
@@ -439,6 +454,406 @@ Format your response as JSON with keys: summary, keyInsights (array), methodolog
   // Method to regenerate analysis (useful if user wants fresh insights)
   async regenerateAnalysis(paperId: string): Promise<AnalysisResult> {
     return this.getAnalysis(paperId, true);
+  }
+
+  /**
+   * Generate visual diagrams for a paper using Mermaid
+   */
+  async getVisuals(paperId: string, forceRegenerate = false): Promise<VisualsResult> {
+    // First, check if we have cached visuals
+    const paper = await Paper.findById(paperId)
+      .select('title authors abstract sections rawText visuals')
+      .lean();
+
+    if (!paper) {
+      throw new Error('Paper not found');
+    }
+
+    // Return cached visuals if available and not forcing regeneration
+    if (paper.visuals?.diagrams && paper.visuals.diagrams.length > 0 && !forceRegenerate) {
+      console.log(`📦 Returning cached visuals for paper ${paperId}`);
+      return {
+        diagrams: paper.visuals.diagrams,
+        cached: true,
+      };
+    }
+
+    console.log(`🎨 Generating new visuals for paper ${paperId}`);
+
+    // Get relevant chunks for visual generation
+    const chunks = await Chunk.find({ paperId })
+      .sort({ position: 1 })
+      .limit(15)
+      .lean();
+
+    // Use chunks if available, otherwise use raw text
+    const content = chunks.length > 0 
+      ? chunks.map(c => c.content).join('\n\n')
+      : paper.rawText?.slice(0, 6000) || '';
+
+    // Build sections summary for context
+    const sectionsContext = paper.sections?.length 
+      ? paper.sections.map(s => `${s.title}: ${s.content.slice(0, 200)}...`).join('\n')
+      : '';
+
+    const prompt = `Analyze the following research paper and create 2-3 Mermaid diagrams that best visualize its key concepts.
+
+Paper Title: ${paper.title}
+Authors: ${paper.authors?.join(', ')}
+Abstract: ${paper.abstract}
+
+${sectionsContext ? `Sections:\n${sectionsContext}\n` : ''}
+
+Content:
+${content}
+
+Based on the paper content, determine the most appropriate diagram types and create them.
+
+RULES FOR DIAGRAM SELECTION:
+- If the paper describes a methodology or process: Create a FLOWCHART showing the steps
+- If the paper has multiple key concepts or topics: Create a MINDMAP showing relationships
+- If there's a timeline or sequence of events: Create a SEQUENCE DIAGRAM
+- If describing a system architecture or data model: Create a CLASS DIAGRAM or ER DIAGRAM
+
+CRITICAL MERMAID SYNTAX RULES (YOU MUST FOLLOW):
+1. Do NOT use spaces in node IDs - use camelCase or underscores (e.g., dataCollection, data_collection)
+2. Do NOT use HTML tags like <br/> - they will break the diagram
+3. Wrap labels with special characters in double quotes: A["Step 1: Initialize"]
+4. For edge labels with parentheses, use quotes: A -->|"O(n) complexity"| B
+5. Escape brackets in labels: A["Array[0]"] not A[Array[0]]
+6. Avoid reserved keywords as node IDs: end, subgraph, graph
+7. For mindmap, each level must have proper indentation with spaces (2 or 4 spaces per level)
+8. Keep node labels concise (max 40 chars) for readability
+
+Example valid syntax:
+flowchart TD
+    A[Data Collection] --> B[Preprocessing]
+    B --> C["Model Training (Phase 1)"]
+    
+mindmap
+    root((Main Topic))
+        Concept1
+            SubConceptA
+            SubConceptB
+        Concept2
+            Finding1
+
+Return a JSON object with this exact structure:
+{
+  "diagrams": [
+    {
+      "type": "flowchart" | "mindmap" | "sequenceDiagram" | "classDiagram" | "erDiagram",
+      "title": "Descriptive title for this diagram",
+      "description": "Brief explanation of what this diagram shows",
+      "code": "Valid Mermaid syntax code"
+    }
+  ]
+}
+
+Generate 2-3 diagrams that provide different perspectives on the paper's content.`;
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.4,
+      max_tokens: 3000,
+      response_format: { type: 'json_object' },
+    });
+
+    const response = completion.choices[0]?.message?.content;
+    
+    if (!response) {
+      throw new Error('Failed to generate visuals');
+    }
+
+    const parsed = JSON.parse(response) as {
+      diagrams: Array<{
+        type: string;
+        title: string;
+        description: string;
+        code: string;
+      }>;
+    };
+
+    // Validate and clean diagrams
+    const diagrams: IMermaidDiagram[] = parsed.diagrams.map(d => ({
+      type: this.validateDiagramType(d.type),
+      title: d.title,
+      description: d.description,
+      code: this.cleanMermaidCode(d.code),
+    }));
+
+    // Save the visuals to the paper document
+    await Paper.findByIdAndUpdate(paperId, {
+      visuals: {
+        diagrams,
+        generatedAt: new Date(),
+      },
+    });
+
+    console.log(`✅ Visuals saved for paper ${paperId} (${diagrams.length} diagrams)`);
+
+    return {
+      diagrams,
+      cached: false,
+    };
+  }
+
+  /**
+   * Validate diagram type
+   */
+  private validateDiagramType(type: string): MermaidDiagramType {
+    const validTypes: MermaidDiagramType[] = ['flowchart', 'mindmap', 'sequenceDiagram', 'classDiagram', 'erDiagram'];
+    const normalizedType = type.toLowerCase().replace(/[^a-z]/g, '');
+    
+    if (normalizedType.includes('flow')) return 'flowchart';
+    if (normalizedType.includes('mind')) return 'mindmap';
+    if (normalizedType.includes('sequence')) return 'sequenceDiagram';
+    if (normalizedType.includes('class')) return 'classDiagram';
+    if (normalizedType.includes('er') || normalizedType.includes('entity')) return 'erDiagram';
+    
+    return validTypes.includes(type as MermaidDiagramType) ? (type as MermaidDiagramType) : 'flowchart';
+  }
+
+  /**
+   * Clean Mermaid code to fix common issues
+   */
+  private cleanMermaidCode(code: string): string {
+    // Remove markdown code fences if present
+    let cleaned = code
+      .replace(/^```mermaid\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+
+    // Fix common issues
+    cleaned = cleaned
+      // Remove HTML tags
+      .replace(/<br\s*\/?>/gi, ' ')
+      .replace(/<[^>]+>/g, '')
+      // Fix escaped quotes
+      .replace(/\\"/g, '"')
+      // Remove consecutive newlines
+      .replace(/\n{3,}/g, '\n\n');
+
+    return cleaned;
+  }
+
+  /**
+   * Regenerate visuals (useful if user wants fresh diagrams)
+   */
+  async regenerateVisuals(paperId: string): Promise<VisualsResult> {
+    return this.getVisuals(paperId, true);
+  }
+
+  /**
+   * Generate personalized implementation ideas based on paper content and user profile
+   */
+  async getIdeas(
+    paperId: string, 
+    userProfile?: IUserProfile, 
+    forceRegenerate = false
+  ): Promise<IdeasResult> {
+    // First, check if we have cached ideas that match the current user context
+    const paper = await Paper.findById(paperId)
+      .select('title authors abstract sections rawText ideas')
+      .lean();
+
+    if (!paper) {
+      throw new Error('Paper not found');
+    }
+
+    // Extract current user context
+    const currentUserContext = {
+      researchField: userProfile?.researchField,
+      interests: userProfile?.interests,
+      currentProjects: userProfile?.currentProjects,
+    };
+
+    // Check if cached ideas are valid (same user context)
+    if (paper.ideas?.ideas && paper.ideas.ideas.length > 0 && !forceRegenerate) {
+      const cachedContext = paper.ideas.userContext;
+      const contextMatches = 
+        cachedContext?.researchField === currentUserContext.researchField &&
+        JSON.stringify(cachedContext?.interests || []) === JSON.stringify(currentUserContext.interests || []) &&
+        cachedContext?.currentProjects === currentUserContext.currentProjects;
+
+      if (contextMatches) {
+        console.log(`📦 Returning cached ideas for paper ${paperId}`);
+        return {
+          ideas: paper.ideas.ideas,
+          userContext: currentUserContext,
+          cached: true,
+        };
+      }
+    }
+
+    console.log(`💡 Generating new implementation ideas for paper ${paperId}`);
+
+    // Get relevant chunks for idea generation
+    const chunks = await Chunk.find({ paperId })
+      .sort({ position: 1 })
+      .limit(15)
+      .lean();
+
+    // Use chunks if available, otherwise use raw text
+    const content = chunks.length > 0 
+      ? chunks.map(c => c.content).join('\n\n')
+      : paper.rawText?.slice(0, 6000) || '';
+
+    // Build user context string
+    const userContextStr = this.buildUserContextForIdeas(userProfile);
+
+    const prompt = `You are an expert research consultant helping users find practical ways to implement research paper concepts in their own work.
+
+PAPER INFORMATION:
+Title: ${paper.title}
+Authors: ${paper.authors?.join(', ')}
+Abstract: ${paper.abstract}
+
+PAPER CONTENT:
+${content}
+
+${userContextStr}
+
+Based on the paper's content and the user's profile, generate 3-5 personalized implementation ideas. Each idea should:
+1. Be directly applicable to the user's field/interests/projects
+2. Leverage specific concepts, methods, or findings from the paper
+3. Be actionable with clear steps
+4. Include difficulty assessment
+
+DIFFICULTY LEVELS:
+- beginner: Can be done with basic knowledge, minimal resources
+- intermediate: Requires some expertise, moderate effort
+- advanced: Requires deep expertise, significant resources
+
+Return a JSON object with this exact structure:
+{
+  "ideas": [
+    {
+      "title": "Short, catchy title for the idea",
+      "description": "2-3 sentence description of what this idea involves and its potential impact",
+      "difficulty": "beginner" | "intermediate" | "advanced",
+      "relevance": "1-2 sentences explaining why this is specifically relevant to the user's profile",
+      "steps": ["Step 1 description", "Step 2 description", "..."],
+      "tools": ["Tool/technology 1", "Tool/technology 2"],
+      "relatedConcepts": ["Concept from paper 1", "Concept from paper 2"]
+    }
+  ]
+}
+
+${!userProfile || Object.keys(userProfile).length === 0 
+  ? 'NOTE: No user profile provided. Generate general-purpose implementation ideas that would be valuable to most researchers.'
+  : 'Make sure each idea is specifically tailored to the user\'s interests, field, and current projects.'}`;
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.5,
+      max_tokens: 3000,
+      response_format: { type: 'json_object' },
+    });
+
+    const response = completion.choices[0]?.message?.content;
+    
+    if (!response) {
+      throw new Error('Failed to generate ideas');
+    }
+
+    const parsed = JSON.parse(response) as {
+      ideas: Array<{
+        title: string;
+        description: string;
+        difficulty: string;
+        relevance: string;
+        steps: string[];
+        tools?: string[];
+        relatedConcepts?: string[];
+      }>;
+    };
+
+    // Validate and clean ideas
+    const ideas: IImplementationIdea[] = parsed.ideas.map(idea => ({
+      title: idea.title,
+      description: idea.description,
+      difficulty: this.validateDifficulty(idea.difficulty),
+      relevance: idea.relevance,
+      steps: idea.steps || [],
+      tools: idea.tools || [],
+      relatedConcepts: idea.relatedConcepts || [],
+    }));
+
+    // Save the ideas to the paper document with user context
+    await Paper.findByIdAndUpdate(paperId, {
+      ideas: {
+        ideas,
+        userContext: currentUserContext,
+        generatedAt: new Date(),
+      },
+    });
+
+    console.log(`✅ Ideas saved for paper ${paperId} (${ideas.length} ideas)`);
+
+    return {
+      ideas,
+      userContext: currentUserContext,
+      cached: false,
+    };
+  }
+
+  /**
+   * Build user context string for ideas generation
+   */
+  private buildUserContextForIdeas(profile?: IUserProfile): string {
+    if (!profile || Object.keys(profile).length === 0) {
+      return 'USER PROFILE: Not provided';
+    }
+
+    const parts: string[] = ['USER PROFILE:'];
+
+    if (profile.researchField) {
+      parts.push(`- Research Field: ${profile.researchField}`);
+    }
+
+    if (profile.expertiseLevel) {
+      parts.push(`- Expertise Level: ${profile.expertiseLevel}`);
+    }
+
+    if (profile.interests && profile.interests.length > 0) {
+      parts.push(`- Interests: ${profile.interests.join(', ')}`);
+    }
+
+    if (profile.currentProjects) {
+      parts.push(`- Current Projects: ${profile.currentProjects}`);
+    }
+
+    if (profile.bio) {
+      parts.push(`- Background: ${profile.bio}`);
+    }
+
+    return parts.join('\n');
+  }
+
+  /**
+   * Validate difficulty level
+   */
+  private validateDifficulty(difficulty: string): 'beginner' | 'intermediate' | 'advanced' {
+    const normalized = difficulty.toLowerCase();
+    if (normalized.includes('begin') || normalized.includes('easy')) return 'beginner';
+    if (normalized.includes('inter') || normalized.includes('medium')) return 'intermediate';
+    if (normalized.includes('advanc') || normalized.includes('hard') || normalized.includes('expert')) return 'advanced';
+    return 'intermediate';
+  }
+
+  /**
+   * Regenerate ideas (useful if user wants fresh suggestions)
+   */
+  async regenerateIdeas(paperId: string, userProfile?: IUserProfile): Promise<IdeasResult> {
+    return this.getIdeas(paperId, userProfile, true);
   }
 }
 

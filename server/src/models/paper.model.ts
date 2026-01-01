@@ -11,6 +11,40 @@ export interface IPaperAnalysis {
   generatedAt: Date;
 }
 
+export type MermaidDiagramType = 'flowchart' | 'mindmap' | 'sequenceDiagram' | 'classDiagram' | 'erDiagram';
+
+export interface IMermaidDiagram {
+  type: MermaidDiagramType;
+  title: string;
+  description: string;
+  code: string;
+}
+
+export interface IPaperVisuals {
+  diagrams: IMermaidDiagram[];
+  generatedAt: Date;
+}
+
+export interface IImplementationIdea {
+  title: string;
+  description: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  relevance: string; // Why this is relevant to user's profile
+  steps: string[];
+  tools?: string[];
+  relatedConcepts?: string[];
+}
+
+export interface IPaperIdeas {
+  ideas: IImplementationIdea[];
+  userContext: {
+    researchField?: string;
+    interests?: string[];
+    currentProjects?: string;
+  };
+  generatedAt: Date;
+}
+
 export interface IPaper extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
@@ -32,6 +66,8 @@ export interface IPaper extends Document {
   }>;
   chunkCount?: number;
   analysis?: IPaperAnalysis;
+  visuals?: IPaperVisuals;
+  ideas?: IPaperIdeas;
   status: PaperStatus;
   processingSteps: {
     parsing: ProcessingStepStatus;
@@ -97,6 +133,38 @@ const paperSchema = new Schema<IPaper>(
       keyInsights: [String],
       methodology: String,
       limitations: String,
+      generatedAt: Date,
+    },
+    visuals: {
+      diagrams: [{
+        type: {
+          type: String,
+          enum: ['flowchart', 'mindmap', 'sequenceDiagram', 'classDiagram', 'erDiagram'],
+        },
+        title: String,
+        description: String,
+        code: String,
+      }],
+      generatedAt: Date,
+    },
+    ideas: {
+      ideas: [{
+        title: String,
+        description: String,
+        difficulty: {
+          type: String,
+          enum: ['beginner', 'intermediate', 'advanced'],
+        },
+        relevance: String,
+        steps: [String],
+        tools: [String],
+        relatedConcepts: [String],
+      }],
+      userContext: {
+        researchField: String,
+        interests: [String],
+        currentProjects: String,
+      },
       generatedAt: Date,
     },
     status: {
