@@ -4,12 +4,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { Visibility, VisibilityOff, AutoAwesome, Email, Lock } from '@mui/icons-material';
+import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material';
 import { CircularProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
+import { useThemeStore } from '@/stores/themeStore';
 import { ThemeToggleSimple } from '@/components/ThemeToggle';
 import { LanguageSwitcherSimple } from '@/components/LanguageSwitcher';
 
@@ -23,6 +24,7 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuthStore();
+  const { resolvedMode } = useThemeStore();
   const { t } = useTranslation();
 
   const loginSchema = z.object({
@@ -71,12 +73,11 @@ export function LoginPage() {
         >
           {/* Logo */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-violet flex items-center justify-center">
-              <AutoAwesome className="text-white text-2xl" />
-            </div>
-            <span className="font-display font-bold text-2xl gradient-text">
-              PaperInsight
-            </span>
+            <img 
+              src={resolvedMode === 'dark' ? '/lunai-logo-dark.svg' : '/lunai-logo-light.svg'} 
+              alt="LUNAI" 
+              className="h-12 w-auto"
+            />
           </div>
 
           <h1 className="text-3xl font-display font-bold text-theme-primary mb-2">
@@ -172,9 +173,11 @@ export function LoginPage() {
           transition={{ duration: 0.7, delay: 0.2 }}
           className="relative z-10 text-center p-12"
         >
-          <div className="w-32 h-32 mx-auto mb-8 rounded-3xl bg-gradient-to-br from-primary-500 to-accent-violet flex items-center justify-center animate-float">
-            <AutoAwesome className="text-white text-6xl" />
-          </div>
+          <img 
+            src={resolvedMode === 'dark' ? '/lunai-icon-dark.svg' : '/lunai-icon-light.svg'} 
+            alt="LUNAI" 
+            className="w-32 h-32 mx-auto mb-8 animate-float"
+          />
           <h2 className="text-4xl font-display font-bold text-theme-primary mb-4 text-balance">
             {t('auth.unlockPower')}
             <span className="gradient-text"> {t('auth.aiResearchAnalysis')}</span>

@@ -15,7 +15,7 @@ const envSchema = z.object({
   PORT: z.string().transform(Number).default('3001'),
   
   // MongoDB
-  MONGODB_URI: z.string().default('mongodb://localhost:27017/paperinsight'),
+  MONGODB_URI: z.string().default('mongodb://localhost:27017/lunai'),
   
   // Redis
   REDIS_URL: z.string().default('redis://localhost:6379'),
@@ -27,9 +27,9 @@ const envSchema = z.object({
   // MinIO
   MINIO_ENDPOINT: z.string().default('localhost'),
   MINIO_PORT: z.string().transform(Number).default('9000'),
-  MINIO_ACCESS_KEY: z.string().default('paperinsight'),
-  MINIO_SECRET_KEY: z.string().default('paperinsight123'),
-  MINIO_BUCKET: z.string().default('paperinsight'),
+  MINIO_ACCESS_KEY: z.string().default('lunai'),
+  MINIO_SECRET_KEY: z.string().default('lunai123'),
+  MINIO_BUCKET: z.string().default('lunai'),
   MINIO_USE_SSL: z.string().transform((val) => val === 'true').default('false'),
   
   // OpenAI
@@ -58,6 +58,9 @@ const envSchema = z.object({
   
   // File Upload
   MAX_FILE_SIZE: z.string().transform(Number).default('52428800'),
+  
+  // CORS (comma-separated origins for production)
+  CORS_ORIGINS: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

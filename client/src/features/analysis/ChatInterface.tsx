@@ -5,12 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send,
   Person,
-  AutoAwesome,
   ContentCopy,
   Check,
   Article,
   Refresh,
-  SmartToy,
   Psychology,
   TipsAndUpdates,
   Science,
@@ -21,6 +19,7 @@ import ReactMarkdown from 'react-markdown';
 import { useTranslation } from 'react-i18next';
 import { papersApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
+import { useThemeStore } from '@/stores/themeStore';
 import toast from 'react-hot-toast';
 
 interface ChatInterfaceProps {
@@ -58,6 +57,7 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
   const [retryQuestion, setRetryQuestion] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { resolvedMode } = useThemeStore();
   const { accessToken, logout } = useAuthStore();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -246,9 +246,11 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
       {!isMobile && (
         <div className="flex items-center gap-3 pb-4 border-b border-border/50 flex-shrink-0">
           <div className="relative">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary-500 via-accent-violet to-accent-coral flex items-center justify-center shadow-lg shadow-primary-500/25">
-              <SmartToy className="text-white" />
-            </div>
+            <img 
+              src={resolvedMode === 'dark' ? '/lunai-icon-dark.svg' : '/lunai-icon-light.svg'} 
+              alt="LUNAI" 
+              className="w-11 h-11"
+            />
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-accent-mint rounded-full border-2 border-background" />
           </div>
           <div className="flex-1">
@@ -280,9 +282,11 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
             {/* Hero section */}
             <div className="relative mb-6">
               <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 via-accent-violet/10 to-transparent rounded-3xl blur-2xl" />
-              <div className="relative w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-primary-500 via-accent-violet to-accent-coral flex items-center justify-center shadow-xl shadow-primary-500/30">
-                <AutoAwesome className="text-white text-4xl" />
-              </div>
+              <img 
+                src={resolvedMode === 'dark' ? '/lunai-icon-dark.svg' : '/lunai-icon-light.svg'} 
+                alt="LUNAI" 
+                className="relative w-20 h-20 mx-auto"
+              />
             </div>
             
             <h3 className="text-lg font-semibold text-foreground mb-2">
@@ -332,19 +336,17 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
                 }`}
               >
                 {/* Avatar */}
-                <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md ${
-                    message.role === 'user'
-                      ? 'bg-gradient-to-br from-primary-500 to-primary-600'
-                      : 'bg-gradient-to-br from-accent-violet to-accent-coral'
-                  }`}
-                >
-                  {message.role === 'user' ? (
+                {message.role === 'user' ? (
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md bg-gradient-to-br from-primary-500 to-primary-600">
                     <Person className="text-white text-sm" />
-                  ) : (
-                    <AutoAwesome className="text-white text-sm" />
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <img 
+                    src={resolvedMode === 'dark' ? '/lunai-icon-dark.svg' : '/lunai-icon-light.svg'} 
+                    alt="LUNAI" 
+                    className="w-8 h-8 flex-shrink-0"
+                  />
+                )}
 
                 {/* Message Content */}
                 <div

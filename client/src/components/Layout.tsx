@@ -7,13 +7,13 @@ import {
   Logout,
   MenuOpen,
   Menu,
-  AutoAwesome,
   Person,
   Token,
 } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
+import { useThemeStore } from '@/stores/themeStore';
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { profileApi, TokenUsageInfo } from '@/lib/api';
@@ -31,6 +31,7 @@ export function Layout() {
   const [tokenUsage, setTokenUsage] = useState<TokenUsageInfo | null>(null);
   const [isLoadingTokens, setIsLoadingTokens] = useState(false);
   const { user, logout } = useAuthStore();
+  const { resolvedMode } = useThemeStore();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -83,20 +84,22 @@ export function Layout() {
       >
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-theme-border/50">
-          <motion.div
-            initial={false}
-            animate={{ opacity: sidebarOpen ? 1 : 0 }}
-            className="flex items-center gap-2 overflow-hidden"
-          >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-violet flex items-center justify-center">
-              <AutoAwesome className="text-white" />
-            </div>
+          <div className="flex items-center gap-2 overflow-hidden">
+            <img 
+              src={resolvedMode === 'dark' ? '/lunai-icon-dark.svg' : '/lunai-icon-light.svg'} 
+              alt="LUNAI" 
+              className="w-10 h-10 flex-shrink-0"
+            />
             {sidebarOpen && (
-              <span className="font-display font-bold text-xl gradient-text whitespace-nowrap">
-                PaperInsight
-              </span>
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="font-display font-bold text-xl text-primary-400 whitespace-nowrap"
+              >
+                LUNAI
+              </motion.span>
             )}
-          </motion.div>
+          </div>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 hover:bg-theme-surface-hover rounded-lg transition-colors"

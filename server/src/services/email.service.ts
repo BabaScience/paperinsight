@@ -37,7 +37,7 @@ class EmailService {
 
     try {
       const { error } = await this.resend.emails.send({
-        from: 'PaperInsight <noreply@paperinsight.app>',
+        from: 'LUNAI <noreply@lunai.app>',
         to: env.ADMIN_EMAIL,
         subject: `🔑 Token Extension Request from ${user.name}`,
         html: `
@@ -101,7 +101,7 @@ class EmailService {
 
     try {
       const { error } = await this.resend.emails.send({
-        from: 'PaperInsight <noreply@paperinsight.app>',
+        from: 'LUNAI <noreply@lunai.app>',
         to: user.email,
         subject: '✅ Your token extension request has been approved!',
         html: `
@@ -117,12 +117,12 @@ class EmailService {
               </p>
             </div>
             
-            <p>You can now continue using PaperInsight to analyze your research papers.</p>
+            <p>You can now continue using LUNAI to analyze your research papers.</p>
             
             <div style="margin-top: 30px;">
-              <a href="https://paperinsight.app" 
+              <a href="https://lunai.app" 
                  style="background: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
-                Go to PaperInsight
+                Go to LUNAI
               </a>
             </div>
           </div>

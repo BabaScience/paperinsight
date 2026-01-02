@@ -17,12 +17,15 @@ import { initializeWorkers } from './workers/index.js';
 const app = express();
 const httpServer = createServer(app);
 
+// CORS origins based on environment
+const corsOrigins = env.NODE_ENV === 'development' 
+  ? ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000']
+  : process.env.CORS_ORIGINS?.split(',') || ['*'];
+
 // Socket.io setup
 const io = new SocketServer(httpServer, {
   cors: {
-    origin: env.NODE_ENV === 'development' 
-      ? ['http://localhost:5173', 'http://localhost:3000'] 
-      : [],
+    origin: corsOrigins,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -30,9 +33,7 @@ const io = new SocketServer(httpServer, {
 
 // Middleware
 app.use(cors({
-  origin: env.NODE_ENV === 'development' 
-    ? ['http://localhost:5173', 'http://localhost:3000'] 
-    : [],
+  origin: corsOrigins,
   credentials: true,
 }));
 app.use(express.json());

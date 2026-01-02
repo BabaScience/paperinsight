@@ -14,7 +14,6 @@ import {
   ExpandMore,
   ExpandLess,
   Article,
-  SmartToy,
   KeyboardArrowDown,
   Chat,
   BubbleChart,
@@ -33,6 +32,7 @@ import {
   onProcessingStatus,
   onProcessingComplete,
 } from '@/lib/socket';
+import { useThemeStore } from '@/stores/themeStore';
 
 interface Section {
   title: string;
@@ -102,6 +102,7 @@ export function AnalysisPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { resolvedMode } = useThemeStore();
   const [activeTab, setActiveTab] = useState(0);
   const [processingMessage, setProcessingMessage] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -549,14 +550,16 @@ export function AnalysisPage() {
               <div className="flex items-center justify-between px-4 py-2 border-b border-border/50 flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-500 via-accent-violet to-accent-coral flex items-center justify-center shadow-lg">
-                      <SmartToy className="text-white text-xl" />
-                    </div>
+                    <img 
+                      src={resolvedMode === 'dark' ? '/lunai-icon-dark.svg' : '/lunai-icon-light.svg'} 
+                      alt="LUNAI" 
+                      className="w-12 h-12"
+                    />
                     {/* Online indicator */}
                     <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-accent-mint rounded-full border-2 border-background" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">PaperInsight AI</h3>
+                    <h3 className="font-semibold text-foreground">LUNAI</h3>
                     <p className="text-xs text-accent-mint flex items-center gap-1">
                       <span className="w-1.5 h-1.5 bg-accent-mint rounded-full animate-pulse" />
                       Online • RAG + GPT-4o

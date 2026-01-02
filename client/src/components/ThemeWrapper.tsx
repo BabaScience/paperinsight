@@ -19,6 +19,14 @@ export function ThemeWrapper({ children }: ThemeWrapperProps) {
     root.classList.add(resolvedMode);
   }, [resolvedMode]);
 
+  // Update favicon based on theme
+  useEffect(() => {
+    const favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+    if (favicon) {
+      favicon.href = resolvedMode === 'dark' ? '/lunai-icon-dark.svg' : '/lunai-icon-light.svg';
+    }
+  }, [resolvedMode]);
+
   // Get the correct MUI theme
   const muiTheme = useMemo(() => getTheme(resolvedMode), [resolvedMode]);
 
