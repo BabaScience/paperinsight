@@ -87,7 +87,7 @@ class EmbeddingService {
     const cacheKeys = truncatedTexts.map(t => this.getCacheKey(t));
     const cachedResults = await redis.mget(...cacheKeys);
     
-    const embeddings: (number[] | null)[] = cachedResults.map(r => 
+    const embeddings: (number[] | null)[] = cachedResults.map((r: string | null) => 
       r ? JSON.parse(r) : null
     );
     

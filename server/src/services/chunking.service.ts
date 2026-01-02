@@ -235,7 +235,7 @@ class ChunkingService {
     if (tokens.length <= this.chunkOverlap) return text;
     
     const overlapTokens = tokens.slice(-this.chunkOverlap);
-    return this.encoding.decode(overlapTokens);
+    return new TextDecoder().decode(this.encoding.decode(overlapTokens));
   }
 }
 

@@ -56,13 +56,13 @@ export function generateTokens(userId: string): {
   const accessToken = jwt.sign(
     { userId, type: 'access' },
     env.JWT_SECRET,
-    { expiresIn: env.JWT_ACCESS_EXPIRY }
+    { expiresIn: env.JWT_ACCESS_EXPIRY } as jwt.SignOptions
   );
   
   const refreshToken = jwt.sign(
     { userId, type: 'refresh' },
     env.JWT_REFRESH_SECRET,
-    { expiresIn: env.JWT_REFRESH_EXPIRY }
+    { expiresIn: env.JWT_REFRESH_EXPIRY } as jwt.SignOptions
   );
   
   return { accessToken, refreshToken };

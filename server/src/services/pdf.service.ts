@@ -1,3 +1,4 @@
+// @ts-expect-error - pdf-parse has no type definitions
 import pdfParse from 'pdf-parse';
 
 interface Section {
