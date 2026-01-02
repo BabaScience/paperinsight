@@ -33,7 +33,22 @@ const envSchema = z.object({
   MINIO_USE_SSL: z.string().transform((val) => val === 'true').default('false'),
   
   // OpenAI
-  OPENAI_API_KEY: z.string(),
+  OPENAI_API_KEY: z.string().optional(),
+  
+  // DeepSeek
+  DEEPSEEK_API_KEY: z.string().optional(),
+  DEEPSEEK_MODEL: z.string().default('deepseek-chat'),
+  
+  // LLM Configuration
+  DEFAULT_LLM_PROVIDER: z.enum(['openai', 'deepseek']).default('openai'),
+  DEFAULT_TOKEN_LIMIT: z.string().transform(Number).default('2000'),
+  
+  // User Token Allowance (total tokens per user)
+  USER_TOKEN_ALLOWANCE: z.string().transform(Number).default('50000'),
+  
+  // Resend (Email)
+  RESEND_API_KEY: z.string().optional(),
+  ADMIN_EMAIL: z.string().email().optional(),
   
   // JWT
   JWT_SECRET: z.string(),

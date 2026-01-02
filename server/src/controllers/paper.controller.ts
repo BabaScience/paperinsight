@@ -4,7 +4,7 @@ import { Paper } from '../models/paper.model.js';
 import { Chunk } from '../models/chunk.model.js';
 import { Conversation } from '../models/conversation.model.js';
 import { User } from '../models/user.model.js';
-import { ragService } from '../services/rag.service.js';
+import { ragService, TokenLimitExceededError } from '../services/rag.service.js';
 import { vectorService } from '../services/vector.service.js';
 import { minioService } from '../services/minio.service.js';
 import { redis } from '../config/redis.js';
@@ -229,11 +229,31 @@ class PaperController {
           res.end();
         },
         onError: (error) => {
-          res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+          // Handle token limit exceeded error specially
+          if (error instanceof TokenLimitExceededError) {
+            res.write(`data: ${JSON.stringify({ 
+              type: 'error', 
+              code: 'TOKEN_LIMIT_EXCEEDED',
+              message: error.message,
+              tokenUsage: error.tokenUsage 
+            })}\n\n`);
+          } else {
+            res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+          }
           res.end();
         },
-      }, userProfile);
+      }, userProfile, req.userId);
     } catch (error) {
+      // Handle token limit exceeded error specially
+      if (error instanceof TokenLimitExceededError) {
+        res.status(402).json({
+          status: 'error',
+          code: 'TOKEN_LIMIT_EXCEEDED',
+          message: error.message,
+          data: { tokenUsage: error.tokenUsage },
+        });
+        return;
+      }
       next(error);
     }
   }
@@ -263,13 +283,23 @@ class PaperController {
 
       // Check if regeneration is requested
       const forceRegenerate = req.query.regenerate === 'true';
-      const analysis = await ragService.getAnalysis(req.params.id!, userProfile, forceRegenerate);
+      const analysis = await ragService.getAnalysis(req.params.id!, userProfile, forceRegenerate, req.userId);
 
       res.json({
         status: 'success',
         data: { analysis },
       });
     } catch (error) {
+      // Handle token limit exceeded error specially
+      if (error instanceof TokenLimitExceededError) {
+        res.status(402).json({
+          status: 'error',
+          code: 'TOKEN_LIMIT_EXCEEDED',
+          message: error.message,
+          data: { tokenUsage: error.tokenUsage },
+        });
+        return;
+      }
       next(error);
     }
   }
@@ -342,13 +372,23 @@ class PaperController {
 
       // Check if regeneration is requested
       const forceRegenerate = req.query.regenerate === 'true';
-      const visuals = await ragService.getVisuals(req.params.id!, userProfile, forceRegenerate);
+      const visuals = await ragService.getVisuals(req.params.id!, userProfile, forceRegenerate, req.userId);
 
       res.json({
         status: 'success',
         data: { visuals },
       });
     } catch (error) {
+      // Handle token limit exceeded error specially
+      if (error instanceof TokenLimitExceededError) {
+        res.status(402).json({
+          status: 'error',
+          code: 'TOKEN_LIMIT_EXCEEDED',
+          message: error.message,
+          data: { tokenUsage: error.tokenUsage },
+        });
+        return;
+      }
       next(error);
     }
   }
@@ -378,13 +418,23 @@ class PaperController {
 
       // Check if regeneration is requested
       const forceRegenerate = req.query.regenerate === 'true';
-      const ideas = await ragService.getIdeas(req.params.id!, userProfile, forceRegenerate);
+      const ideas = await ragService.getIdeas(req.params.id!, userProfile, forceRegenerate, req.userId);
 
       res.json({
         status: 'success',
         data: { ideas },
       });
     } catch (error) {
+      // Handle token limit exceeded error specially
+      if (error instanceof TokenLimitExceededError) {
+        res.status(402).json({
+          status: 'error',
+          code: 'TOKEN_LIMIT_EXCEEDED',
+          message: error.message,
+          data: { tokenUsage: error.tokenUsage },
+        });
+        return;
+      }
       next(error);
     }
   }

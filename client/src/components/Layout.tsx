@@ -9,12 +9,15 @@ import {
   Menu,
   AutoAwesome,
   Person,
+  Token,
 } from '@mui/icons-material';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { profileApi, TokenUsageInfo } from '@/lib/api';
+import { Tooltip, CircularProgress } from '@mui/material';
 
 const navItems = [
   { path: '/', icon: Home, labelKey: 'nav.dashboard' },
@@ -25,13 +28,48 @@ const navItems = [
 
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [tokenUsage, setTokenUsage] = useState<TokenUsageInfo | null>(null);
+  const [isLoadingTokens, setIsLoadingTokens] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  // Load token usage on mount and periodically refresh
+  useEffect(() => {
+    loadTokenUsage();
+    // Refresh every 60 seconds
+    const interval = setInterval(loadTokenUsage, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadTokenUsage = async () => {
+    try {
+      setIsLoadingTokens(true);
+      const response = await profileApi.getTokenUsage();
+      setTokenUsage(response.data.data.tokenUsage);
+    } catch (err) {
+      console.error('Failed to load token usage:', err);
+    } finally {
+      setIsLoadingTokens(false);
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  // Get color based on usage percentage
+  const getUsageColor = (percentage: number) => {
+    if (percentage >= 90) return 'text-red-500';
+    if (percentage >= 70) return 'text-amber-500';
+    return 'text-emerald-500';
+  };
+
+  const getUsageBgColor = (percentage: number) => {
+    if (percentage >= 90) return 'bg-red-500';
+    if (percentage >= 70) return 'bg-amber-500';
+    return 'bg-emerald-500';
   };
 
   return (
@@ -117,6 +155,71 @@ export function Layout() {
               <LanguageSwitcher compact />
             </>
           )}
+        </div>
+
+        {/* Token Usage Indicator */}
+        <div className="px-3 py-2 border-t border-theme-border/50">
+          <NavLink
+            to="/profile"
+            className="block"
+          >
+            <Tooltip 
+              title={tokenUsage 
+                ? `${tokenUsage.used.toLocaleString()} / ${tokenUsage.allowance.toLocaleString()} tokens used`
+                : 'Loading...'
+              }
+              placement="right"
+              arrow
+            >
+              <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-theme-surface-hover ${
+                tokenUsage?.hasReachedLimit ? 'bg-red-500/10' : ''
+              }`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                  tokenUsage?.hasReachedLimit 
+                    ? 'bg-red-500/20 text-red-500' 
+                    : 'bg-primary-500/20 text-primary-500'
+                }`}>
+                  {isLoadingTokens ? (
+                    <CircularProgress size={16} className="text-primary-500" />
+                  ) : (
+                    <Token className="w-4 h-4" />
+                  )}
+                </div>
+                {sidebarOpen && tokenUsage && (
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-theme-muted">{t('nav.tokens')}</span>
+                      <span className={`text-xs font-medium ${getUsageColor(tokenUsage.percentageUsed)}`}>
+                        {tokenUsage.percentageUsed.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-theme-surface rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(tokenUsage.percentageUsed, 100)}%` }}
+                        transition={{ duration: 0.5, ease: 'easeOut' }}
+                        className={`h-full rounded-full ${getUsageBgColor(tokenUsage.percentageUsed)}`}
+                      />
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span className="text-[10px] text-theme-muted">
+                        {t('nav.tokensLeft', { count: (tokenUsage.remaining / 1000).toFixed(1) })}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {!sidebarOpen && tokenUsage && (
+                  <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full" style={{
+                    backgroundColor: tokenUsage.percentageUsed >= 90 
+                      ? 'rgb(239, 68, 68)' 
+                      : tokenUsage.percentageUsed >= 70 
+                      ? 'rgb(245, 158, 11)' 
+                      : 'rgb(16, 185, 129)'
+                  }} />
+                )}
+              </div>
+            </Tooltip>
+          </NavLink>
         </div>
 
         {/* User section */}

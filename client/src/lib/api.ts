@@ -70,6 +70,8 @@ export const authApi = {
   me: () => api.get('/auth/me'),
 };
 
+export type PreferredModel = 'openai' | 'deepseek';
+
 export interface ProfileData {
   researchField?: string;
   expertiseLevel?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
@@ -77,7 +79,18 @@ export interface ProfileData {
   currentProjects?: string;
   preferredStyle?: 'technical' | 'simplified' | 'examples-heavy' | 'concise';
   preferredLanguage?: string;
+  preferredModel?: PreferredModel;
+  tokenLimit?: number;
   bio?: string;
+}
+
+export interface TokenUsageInfo {
+  used: number;
+  allowance: number;
+  remaining: number;
+  percentageUsed: number;
+  hasReachedLimit: boolean;
+  pendingRequest: boolean;
 }
 
 export const profileApi = {
@@ -88,6 +101,10 @@ export const profileApi = {
   patch: (data: Partial<ProfileData>) => api.patch('/profile', data),
   
   reset: () => api.delete('/profile'),
+  
+  getTokenUsage: () => api.get<{ status: string; data: { tokenUsage: TokenUsageInfo } }>('/profile/tokens'),
+  
+  requestTokenExtension: (message?: string) => api.post('/profile/tokens/request', { message }),
 };
 
 export const papersApi = {

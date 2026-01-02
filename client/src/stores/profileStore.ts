@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 
 export type ExpertiseLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert';
 export type PreferredStyle = 'technical' | 'simplified' | 'examples-heavy' | 'concise';
+export type PreferredModel = 'openai' | 'deepseek';
 
 export interface UserProfile {
   researchField?: string;
@@ -11,6 +12,8 @@ export interface UserProfile {
   currentProjects?: string;
   preferredStyle?: PreferredStyle;
   preferredLanguage?: string;
+  preferredModel?: PreferredModel;
+  tokenLimit?: number;
   bio?: string;
 }
 

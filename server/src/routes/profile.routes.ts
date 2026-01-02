@@ -28,3 +28,9 @@ profileRouter.patch(
 // DELETE /api/profile - Reset profile to defaults
 profileRouter.delete('/', profileController.resetProfile);
 
+// GET /api/profile/tokens - Get token usage info
+profileRouter.get('/tokens', profileController.getTokenUsage);
+
+// POST /api/profile/tokens/request - Request token extension
+profileRouter.post('/tokens/request', profileController.requestTokenExtension);
+

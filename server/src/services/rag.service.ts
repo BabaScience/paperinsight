@@ -1,14 +1,24 @@
-import OpenAI from 'openai';
 import { env } from '../config/env.js';
 import { embeddingService } from './embedding.service.js';
 import { vectorService } from './vector.service.js';
 import { Chunk } from '../models/chunk.model.js';
 import { Paper, IMermaidDiagram, MermaidDiagramType, IImplementationIdea } from '../models/paper.model.js';
 import { IUserProfile } from '../models/user.model.js';
+import { llmService } from './llm/llm.service.js';
+import { tokenService, TokenUsageInfo } from './token.service.js';
 
-const openai = new OpenAI({
-  apiKey: env.OPENAI_API_KEY,
-});
+/**
+ * Custom error for token limit exceeded
+ */
+export class TokenLimitExceededError extends Error {
+  public tokenUsage: TokenUsageInfo;
+
+  constructor(message: string, tokenUsage: TokenUsageInfo) {
+    super(message);
+    this.name = 'TokenLimitExceededError';
+    this.tokenUsage = tokenUsage;
+  }
+}
 
 interface QueryResult {
   answer: string;
@@ -47,6 +57,29 @@ interface IdeasResult {
     currentProjects?: string;
   };
   cached: boolean;
+}
+
+/**
+ * Clean JSON response from LLM by removing markdown code fences
+ * Some models (like DeepSeek) wrap JSON in ```json ... ``` blocks
+ */
+function cleanJsonResponse(response: string): string {
+  let cleaned = response.trim();
+  
+  // Remove markdown code fences (```json ... ``` or ``` ... ```)
+  if (cleaned.startsWith('```')) {
+    // Find the end of the first line (which might be ```json or just ```)
+    const firstNewline = cleaned.indexOf('\n');
+    if (firstNewline !== -1) {
+      cleaned = cleaned.slice(firstNewline + 1);
+    }
+    // Remove trailing ```
+    if (cleaned.endsWith('```')) {
+      cleaned = cleaned.slice(0, -3);
+    }
+  }
+  
+  return cleaned.trim();
 }
 
 const BASE_SYSTEM_PROMPT = `You are an expert research paper analyst. Your task is to answer questions about academic papers based on the provided context.
@@ -184,10 +217,33 @@ IMPORTANT: You MUST respond entirely in ${profile.preferredLanguage}. All explan
 }
 
 class RagService {
+  /**
+   * Check token limit and throw if exceeded
+   */
+  private async checkTokenLimit(userId: string, estimatedTokens: number): Promise<void> {
+    const { allowed, info } = await tokenService.canUseTokens(userId, estimatedTokens);
+    
+    if (!allowed) {
+      throw new TokenLimitExceededError(
+        'You have reached your token limit. Please request an extension to continue using the AI features.',
+        info
+      );
+    }
+  }
+
+  /**
+   * Estimate tokens for a request (rough estimate: ~4 chars per token)
+   */
+  private estimateTokens(text: string, maxResponseTokens: number): number {
+    const inputTokens = Math.ceil(text.length / 4);
+    return inputTokens + maxResponseTokens;
+  }
+
   async query(
     paperId: string,
     question: string,
-    userProfile?: IUserProfile
+    userProfile?: IUserProfile,
+    userId?: string
   ): Promise<QueryResult> {
     // Get paper metadata first
     const paper = await Paper.findById(paperId)
@@ -252,27 +308,41 @@ Please provide a comprehensive answer based on the context above.`;
     // Build personalized system prompt
     const systemPrompt = buildSystemPrompt(userProfile, question);
 
-    // Generate response using GPT-4
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+    // Determine provider and token limit from user profile
+    const provider = userProfile?.preferredModel || env.DEFAULT_LLM_PROVIDER;
+    const maxTokens = userProfile?.tokenLimit || env.DEFAULT_TOKEN_LIMIT;
+
+    // Check token limit if userId is provided
+    const estimatedTokens = this.estimateTokens(systemPrompt + userPrompt, maxTokens);
+    if (userId) {
+      await this.checkTokenLimit(userId, estimatedTokens);
+    }
+
+    // Generate response using the user's preferred model
+    const answer = await llmService.chat(provider, {
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.3,
-      max_tokens: 1500,
+      maxTokens,
     });
 
-    const answer = completion.choices[0]?.message?.content || 'Unable to generate response.';
+    // Record token usage if userId is provided
+    if (userId && answer) {
+      const actualTokens = this.estimateTokens(systemPrompt + userPrompt + answer, 0);
+      await tokenService.recordUsage(userId, actualTokens);
+    }
 
-    return { answer, sources };
+    return { answer: answer || 'Unable to generate response.', sources };
   }
 
   async queryStream(
     paperId: string,
     question: string,
     callbacks: StreamCallbacks,
-    userProfile?: IUserProfile
+    userProfile?: IUserProfile,
+    userId?: string
   ): Promise<void> {
     try {
       // Get paper metadata first
@@ -338,35 +408,46 @@ Please provide a comprehensive answer based on the context above.`;
       // Build personalized system prompt
       const systemPrompt = buildSystemPrompt(userProfile, question);
 
-      // Stream response using GPT-4
-      const stream = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.3,
-        max_tokens: 1500,
-        stream: true,
-      });
+      // Determine provider and token limit from user profile
+      const provider = userProfile?.preferredModel || env.DEFAULT_LLM_PROVIDER;
+      const maxTokens = userProfile?.tokenLimit || env.DEFAULT_TOKEN_LIMIT;
 
-      let fullAnswer = '';
-
-      for await (const chunk of stream) {
-        const token = chunk.choices[0]?.delta?.content || '';
-        if (token) {
-          fullAnswer += token;
-          callbacks.onToken(token);
-        }
+      // Check token limit if userId is provided
+      const estimatedTokens = this.estimateTokens(systemPrompt + userPrompt, maxTokens);
+      if (userId) {
+        await this.checkTokenLimit(userId, estimatedTokens);
       }
 
-      callbacks.onComplete({ answer: fullAnswer, sources });
+      // Stream response using the user's preferred model
+      await llmService.chatStream(
+        provider,
+        {
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.3,
+          maxTokens,
+        },
+        {
+          onToken: callbacks.onToken,
+          onComplete: async (fullAnswer) => {
+            // Record token usage if userId is provided
+            if (userId) {
+              const actualTokens = this.estimateTokens(systemPrompt + userPrompt + fullAnswer, 0);
+              await tokenService.recordUsage(userId, actualTokens);
+            }
+            callbacks.onComplete({ answer: fullAnswer, sources });
+          },
+          onError: callbacks.onError,
+        }
+      );
     } catch (error) {
       callbacks.onError(error instanceof Error ? error : new Error('Unknown error'));
     }
   }
 
-  async getAnalysis(paperId: string, userProfile?: IUserProfile, forceRegenerate = false): Promise<AnalysisResult> {
+  async getAnalysis(paperId: string, userProfile?: IUserProfile, forceRegenerate = false, userId?: string): Promise<AnalysisResult> {
     // First, check if we have cached analysis
     const paper = await Paper.findById(paperId)
       .select('title authors abstract sections rawText analysis')
@@ -423,22 +504,35 @@ Please provide:
 
 Format your response as JSON with keys: summary, keyInsights (array), methodology, limitations${languageInstruction}`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+    // Determine provider and token limit from user profile
+    const provider = userProfile?.preferredModel || env.DEFAULT_LLM_PROVIDER;
+    const maxTokens = userProfile?.tokenLimit || env.DEFAULT_TOKEN_LIMIT;
+
+    // Check token limit if userId is provided
+    const estimatedTokens = this.estimateTokens(prompt, maxTokens);
+    if (userId) {
+      await this.checkTokenLimit(userId, estimatedTokens);
+    }
+
+    const response = await llmService.chat(provider, {
       messages: [
         { role: 'user', content: prompt },
       ],
       temperature: 0.3,
-      response_format: { type: 'json_object' },
+      maxTokens,
     });
-
-    const response = completion.choices[0]?.message?.content;
     
     if (!response) {
       throw new Error('Failed to generate analysis');
     }
 
-    const analysis = JSON.parse(response) as {
+    // Record token usage if userId is provided
+    if (userId) {
+      const actualTokens = this.estimateTokens(prompt + response, 0);
+      await tokenService.recordUsage(userId, actualTokens);
+    }
+
+    const analysis = JSON.parse(cleanJsonResponse(response)) as {
       summary: string;
       keyInsights: string[];
       methodology?: string;
@@ -465,14 +559,14 @@ Format your response as JSON with keys: summary, keyInsights (array), methodolog
   }
 
   // Method to regenerate analysis (useful if user wants fresh insights)
-  async regenerateAnalysis(paperId: string, userProfile?: IUserProfile): Promise<AnalysisResult> {
-    return this.getAnalysis(paperId, userProfile, true);
+  async regenerateAnalysis(paperId: string, userProfile?: IUserProfile, userId?: string): Promise<AnalysisResult> {
+    return this.getAnalysis(paperId, userProfile, true, userId);
   }
 
   /**
    * Generate visual diagrams for a paper using Mermaid
    */
-  async getVisuals(paperId: string, userProfile?: IUserProfile, forceRegenerate = false): Promise<VisualsResult> {
+  async getVisuals(paperId: string, userProfile?: IUserProfile, forceRegenerate = false, userId?: string): Promise<VisualsResult> {
     // First, check if we have cached visuals
     const paper = await Paper.findById(paperId)
       .select('title authors abstract sections rawText visuals')
@@ -577,23 +671,35 @@ Return a JSON object with this exact structure:
 
 Generate 2-3 diagrams that provide different perspectives on the paper's content.${languageInstruction}`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+    // Determine provider and token limit from user profile
+    const provider = userProfile?.preferredModel || env.DEFAULT_LLM_PROVIDER;
+    const maxTokens = Math.max(userProfile?.tokenLimit || env.DEFAULT_TOKEN_LIMIT, 3000); // Need more tokens for diagrams
+
+    // Check token limit if userId is provided
+    const estimatedTokens = this.estimateTokens(prompt, maxTokens);
+    if (userId) {
+      await this.checkTokenLimit(userId, estimatedTokens);
+    }
+
+    const response = await llmService.chat(provider, {
       messages: [
         { role: 'user', content: prompt },
       ],
       temperature: 0.4,
-      max_tokens: 3000,
-      response_format: { type: 'json_object' },
+      maxTokens,
     });
-
-    const response = completion.choices[0]?.message?.content;
     
     if (!response) {
       throw new Error('Failed to generate visuals');
     }
 
-    const parsed = JSON.parse(response) as {
+    // Record token usage if userId is provided
+    if (userId) {
+      const actualTokens = this.estimateTokens(prompt + response, 0);
+      await tokenService.recordUsage(userId, actualTokens);
+    }
+
+    const parsed = JSON.parse(cleanJsonResponse(response)) as {
       diagrams: Array<{
         type: string;
         title: string;
@@ -669,8 +775,8 @@ Generate 2-3 diagrams that provide different perspectives on the paper's content
   /**
    * Regenerate visuals (useful if user wants fresh diagrams)
    */
-  async regenerateVisuals(paperId: string, userProfile?: IUserProfile): Promise<VisualsResult> {
-    return this.getVisuals(paperId, userProfile, true);
+  async regenerateVisuals(paperId: string, userProfile?: IUserProfile, userId?: string): Promise<VisualsResult> {
+    return this.getVisuals(paperId, userProfile, true, userId);
   }
 
   /**
@@ -679,7 +785,8 @@ Generate 2-3 diagrams that provide different perspectives on the paper's content
   async getIdeas(
     paperId: string, 
     userProfile?: IUserProfile, 
-    forceRegenerate = false
+    forceRegenerate = false,
+    userId?: string
   ): Promise<IdeasResult> {
     // First, check if we have cached ideas that match the current user context
     const paper = await Paper.findById(paperId)
@@ -777,23 +884,35 @@ ${!userProfile || Object.keys(userProfile).length === 0
     : ''
 }`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+    // Determine provider and token limit from user profile
+    const provider = userProfile?.preferredModel || env.DEFAULT_LLM_PROVIDER;
+    const maxTokens = Math.max(userProfile?.tokenLimit || env.DEFAULT_TOKEN_LIMIT, 3000); // Need more tokens for ideas
+
+    // Check token limit if userId is provided
+    const estimatedTokens = this.estimateTokens(prompt, maxTokens);
+    if (userId) {
+      await this.checkTokenLimit(userId, estimatedTokens);
+    }
+
+    const response = await llmService.chat(provider, {
       messages: [
         { role: 'user', content: prompt },
       ],
       temperature: 0.5,
-      max_tokens: 3000,
-      response_format: { type: 'json_object' },
+      maxTokens,
     });
-
-    const response = completion.choices[0]?.message?.content;
     
     if (!response) {
       throw new Error('Failed to generate ideas');
     }
 
-    const parsed = JSON.parse(response) as {
+    // Record token usage if userId is provided
+    if (userId) {
+      const actualTokens = this.estimateTokens(prompt + response, 0);
+      await tokenService.recordUsage(userId, actualTokens);
+    }
+
+    const parsed = JSON.parse(cleanJsonResponse(response)) as {
       ideas: Array<{
         title: string;
         description: string;
@@ -881,8 +1000,8 @@ ${!userProfile || Object.keys(userProfile).length === 0
   /**
    * Regenerate ideas (useful if user wants fresh suggestions)
    */
-  async regenerateIdeas(paperId: string, userProfile?: IUserProfile): Promise<IdeasResult> {
-    return this.getIdeas(paperId, userProfile, true);
+  async regenerateIdeas(paperId: string, userProfile?: IUserProfile, userId?: string): Promise<IdeasResult> {
+    return this.getIdeas(paperId, userProfile, true, userId);
   }
 }
 

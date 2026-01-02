@@ -14,10 +14,16 @@ import {
   CheckCircle,
   AutoAwesome,
   Language,
+  SmartToy,
+  Tune,
+  Warning,
+  Send,
+  HourglassEmpty,
+  DataUsage,
 } from '@mui/icons-material';
-import { CircularProgress, Tooltip, Chip } from '@mui/material';
+import { CircularProgress, Tooltip, Chip, Slider, LinearProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { profileApi, ProfileData } from '@/lib/api';
+import { profileApi, ProfileData, PreferredModel, TokenUsageInfo } from '@/lib/api';
 import { useProfileStore, ExpertiseLevel, PreferredStyle } from '@/stores/profileStore';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -68,6 +74,19 @@ const LANGUAGE_OPTIONS = [
   { value: 'Hindi', label: 'हिन्दी', flag: '🇮🇳' },
 ];
 
+const MODEL_OPTIONS: { value: PreferredModel; label: string; description: string; icon: string }[] = [
+  { value: 'openai', label: 'OpenAI GPT-4o', description: 'profile.openaiDesc', icon: '🤖' },
+  { value: 'deepseek', label: 'DeepSeek', description: 'profile.deepseekDesc', icon: '🔮' },
+];
+
+const TOKEN_LIMIT_MARKS = [
+  { value: 500, label: '500' },
+  { value: 1000, label: '1K' },
+  { value: 2000, label: '2K' },
+  { value: 4000, label: '4K' },
+  { value: 8000, label: '8K' },
+];
+
 export function ProfilePage() {
   const { profile, setProfile, setLoading, setError, isLoading } = useProfileStore();
   const { user } = useAuthStore();
@@ -80,6 +99,8 @@ export function ProfilePage() {
     currentProjects: '',
     preferredStyle: undefined,
     preferredLanguage: undefined,
+    preferredModel: undefined,
+    tokenLimit: 2000,
     bio: '',
   });
   
@@ -88,10 +109,18 @@ export function ProfilePage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [showFieldSuggestions, setShowFieldSuggestions] = useState(false);
+  
+  // Token usage state
+  const [tokenUsage, setTokenUsage] = useState<TokenUsageInfo | null>(null);
+  const [isLoadingTokens, setIsLoadingTokens] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestMessage, setRequestMessage] = useState('');
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
 
   // Load profile on mount
   useEffect(() => {
     loadProfile();
+    loadTokenUsage();
   }, []);
 
   // Track changes
@@ -104,6 +133,8 @@ export function ProfilePage() {
         currentProjects: profile.currentProjects || '',
         preferredStyle: profile.preferredStyle,
         preferredLanguage: profile.preferredLanguage,
+        preferredModel: profile.preferredModel,
+        tokenLimit: profile.tokenLimit || 2000,
         bio: profile.bio || '',
       });
       setHasChanges(changed);
@@ -115,6 +146,8 @@ export function ProfilePage() {
         !!formData.currentProjects ||
         !!formData.preferredStyle ||
         !!formData.preferredLanguage ||
+        !!formData.preferredModel ||
+        formData.tokenLimit !== 2000 ||
         !!formData.bio
       );
     }
@@ -133,6 +166,8 @@ export function ProfilePage() {
         currentProjects: loadedProfile.currentProjects || '',
         preferredStyle: loadedProfile.preferredStyle,
         preferredLanguage: loadedProfile.preferredLanguage,
+        preferredModel: loadedProfile.preferredModel,
+        tokenLimit: loadedProfile.tokenLimit || 2000,
         bio: loadedProfile.bio || '',
       });
     } catch (err) {
@@ -140,6 +175,32 @@ export function ProfilePage() {
       setError('Failed to load profile');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTokenUsage = async () => {
+    try {
+      setIsLoadingTokens(true);
+      const response = await profileApi.getTokenUsage();
+      setTokenUsage(response.data.data.tokenUsage);
+    } catch (err) {
+      console.error('Failed to load token usage:', err);
+    } finally {
+      setIsLoadingTokens(false);
+    }
+  };
+
+  const handleRequestExtension = async () => {
+    try {
+      setIsSubmittingRequest(true);
+      await profileApi.requestTokenExtension(requestMessage);
+      setShowRequestModal(false);
+      setRequestMessage('');
+      loadTokenUsage(); // Refresh token usage to show pending status
+    } catch (err) {
+      console.error('Failed to request extension:', err);
+    } finally {
+      setIsSubmittingRequest(false);
     }
   };
 
@@ -171,6 +232,8 @@ export function ProfilePage() {
         currentProjects: '',
         preferredStyle: undefined,
         preferredLanguage: undefined,
+        preferredModel: undefined,
+        tokenLimit: 2000,
         bio: '',
       });
       setHasChanges(false);
@@ -288,6 +351,165 @@ export function ProfilePage() {
             <span className="text-accent-mint font-medium">
               {t('profile.saveSuccess')}
             </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Token Usage Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className={`card ${tokenUsage?.hasReachedLimit ? 'border-accent-coral/50 bg-accent-coral/5' : ''}`}
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+            tokenUsage?.hasReachedLimit 
+              ? 'bg-gradient-to-br from-accent-coral to-red-600' 
+              : 'bg-gradient-to-br from-primary-500 to-accent-teal'
+          }`}>
+            <DataUsage className="text-white" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">{t('profile.tokenUsage')}</h3>
+            <p className="text-sm text-muted">
+              {t('profile.tokenUsageDescription')}
+            </p>
+          </div>
+        </div>
+
+        {isLoadingTokens ? (
+          <div className="flex items-center justify-center py-4">
+            <CircularProgress size={24} className="text-primary-500" />
+          </div>
+        ) : tokenUsage ? (
+          <div className="space-y-4">
+            {/* Progress Bar */}
+            <div>
+              <div className="flex justify-between mb-2 text-sm">
+                <span className="text-muted">
+                  {tokenUsage.used.toLocaleString()} {t('profile.tokensUsed')}
+                </span>
+                <span className="text-muted">
+                  {t('profile.tokenUsageOf', { total: tokenUsage.allowance.toLocaleString() })}
+                </span>
+              </div>
+              <LinearProgress
+                variant="determinate"
+                value={Math.min(tokenUsage.percentageUsed, 100)}
+                sx={{
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: 'rgb(var(--color-surface))',
+                  '& .MuiLinearProgress-bar': {
+                    borderRadius: 4,
+                    background: tokenUsage.percentageUsed >= 90
+                      ? 'linear-gradient(90deg, rgb(239, 68, 68), rgb(220, 38, 38))'
+                      : tokenUsage.percentageUsed >= 70
+                      ? 'linear-gradient(90deg, rgb(245, 158, 11), rgb(234, 88, 12))'
+                      : 'linear-gradient(90deg, rgb(var(--color-primary-500)), rgb(var(--color-accent-teal)))',
+                  },
+                }}
+              />
+              <div className="flex justify-between mt-2 text-sm">
+                <span className={`font-medium ${tokenUsage.hasReachedLimit ? 'text-accent-coral' : 'text-primary-500'}`}>
+                  {tokenUsage.percentageUsed.toFixed(1)}%
+                </span>
+                <span className="text-muted">
+                  {tokenUsage.remaining.toLocaleString()} {t('profile.tokensRemaining')}
+                </span>
+              </div>
+            </div>
+
+            {/* Warning/Status */}
+            {tokenUsage.hasReachedLimit && !tokenUsage.pendingRequest && (
+              <div className="bg-accent-coral/10 border border-accent-coral/30 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <Warning className="text-accent-coral flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-accent-coral">{t('profile.tokenLimitReached')}</h4>
+                    <p className="text-sm text-muted mt-1">{t('profile.tokenLimitReachedDesc')}</p>
+                    <motion.button
+                      onClick={() => setShowRequestModal(true)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="mt-3 px-4 py-2 bg-accent-coral text-white rounded-lg text-sm font-medium hover:bg-accent-coral/90 transition-colors"
+                    >
+                      {t('profile.requestExtension')}
+                    </motion.button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {tokenUsage.pendingRequest && (
+              <div className="bg-accent-gold/10 border border-accent-gold/30 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <HourglassEmpty className="text-accent-gold flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-accent-gold">{t('profile.pendingRequest')}</h4>
+                    <p className="text-sm text-muted mt-1">{t('profile.pendingRequestDesc')}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </motion.div>
+
+      {/* Token Extension Request Modal */}
+      <AnimatePresence>
+        {showRequestModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowRequestModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-background rounded-2xl p-6 max-w-md w-full shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                {t('profile.requestExtensionTitle')}
+              </h3>
+              <p className="text-sm text-muted mb-4">
+                {t('profile.requestExtensionDesc')}
+              </p>
+              <textarea
+                value={requestMessage}
+                onChange={(e) => setRequestMessage(e.target.value)}
+                placeholder={t('profile.requestExtensionPlaceholder')}
+                className="input-field resize-none w-full"
+                rows={4}
+              />
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={() => setShowRequestModal(false)}
+                  className="flex-1 px-4 py-2 text-muted hover:text-foreground transition-colors rounded-lg"
+                >
+                  {t('common.cancel')}
+                </button>
+                <motion.button
+                  onClick={handleRequestExtension}
+                  disabled={isSubmittingRequest}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex-1 btn-primary flex items-center justify-center gap-2"
+                >
+                  {isSubmittingRequest ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  {t('profile.submitRequest')}
+                </motion.button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -651,11 +873,121 @@ export function ProfilePage() {
           )}
         </motion.div>
 
-        {/* How it works info */}
+        {/* AI Model Selection */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="card"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-mint to-accent-teal flex items-center justify-center">
+              <SmartToy className="text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">{t('profile.aiModel')}</h3>
+              <p className="text-sm text-muted">
+                {t('profile.aiModelDescription')}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {MODEL_OPTIONS.map((option) => (
+              <motion.button
+                key={option.value}
+                onClick={() => setFormData({ ...formData, preferredModel: option.value })}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`p-4 rounded-xl border-2 text-left transition-all ${
+                  formData.preferredModel === option.value
+                    ? 'border-primary-500 bg-primary-500/10'
+                    : 'border-border hover:border-primary-500/30 hover:bg-surface'
+                }`}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-2xl">{option.icon}</span>
+                  <p className={`font-medium ${
+                    formData.preferredModel === option.value ? 'text-primary-500' : 'text-foreground'
+                  }`}>
+                    {option.label}
+                  </p>
+                </div>
+                <p className="text-sm text-muted">{t(option.description)}</p>
+              </motion.button>
+            ))}
+          </div>
+
+          {!formData.preferredModel && (
+            <p className="text-sm text-muted text-center mt-4">
+              {t('profile.noModelSelected')}
+            </p>
+          )}
+        </motion.div>
+
+        {/* Token Limit */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.65 }}
+          className="card"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-coral flex items-center justify-center">
+              <Tune className="text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">{t('profile.tokenLimit')}</h3>
+              <p className="text-sm text-muted">
+                {t('profile.tokenLimitDescription')}
+              </p>
+            </div>
+          </div>
+
+          <div className="px-4 py-2">
+            <div className="flex justify-between mb-2">
+              <span className="text-sm text-muted">{t('profile.tokenLimitLabel')}</span>
+              <span className="text-sm font-medium text-primary-500">
+                {formData.tokenLimit?.toLocaleString()} {t('profile.tokens')}
+              </span>
+            </div>
+            <Slider
+              value={formData.tokenLimit || 2000}
+              onChange={(_, value) => setFormData({ ...formData, tokenLimit: value as number })}
+              min={500}
+              max={8000}
+              step={100}
+              marks={TOKEN_LIMIT_MARKS}
+              sx={{
+                color: 'rgb(var(--color-primary-500))',
+                '& .MuiSlider-markLabel': {
+                  color: 'rgb(var(--color-text-muted))',
+                  fontSize: '0.75rem',
+                },
+                '& .MuiSlider-mark': {
+                  backgroundColor: 'rgb(var(--color-border))',
+                },
+                '& .MuiSlider-thumb': {
+                  '&:hover, &.Mui-focusVisible': {
+                    boxShadow: '0 0 0 8px rgba(var(--color-primary-500), 0.16)',
+                  },
+                },
+                '& .MuiSlider-track': {
+                  background: 'linear-gradient(90deg, rgb(var(--color-primary-500)), rgb(var(--color-accent-violet)))',
+                },
+              }}
+            />
+            <p className="text-xs text-muted mt-4">
+              {t('profile.tokenLimitHint')}
+            </p>
+          </div>
+        </motion.div>
+
+        {/* How it works info */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.75 }}
           className="bg-gradient-to-r from-primary-500/10 via-accent-violet/10 to-accent-coral/10 rounded-2xl p-6 border border-primary-500/20"
         >
           <div className="flex items-start gap-4">
@@ -695,6 +1027,12 @@ export function ProfilePage() {
                   <span className="w-1.5 h-1.5 bg-accent-gold rounded-full mt-2 flex-shrink-0" />
                   <span>
                     <strong className="text-foreground">{t('profile.preferredLanguage')}</strong> {t('profile.howLanguage')}
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 bg-accent-mint rounded-full mt-2 flex-shrink-0" />
+                  <span>
+                    <strong className="text-foreground">{t('profile.aiModel')}</strong> {t('profile.howModel')}
                   </span>
                 </li>
               </ul>
