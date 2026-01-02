@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import mermaid from 'mermaid';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   ContentCopy, 
   Check, 
@@ -12,7 +12,7 @@ import {
   FullscreenExit,
   Close,
 } from '@mui/icons-material';
-import { Tooltip } from '@mui/material';
+import { Tooltip, Dialog, DialogContent, IconButton } from '@mui/material';
 import { useThemeStore } from '@/stores/themeStore';
 
 interface MermaidDiagramProps {
@@ -114,25 +114,11 @@ export function MermaidDiagram({ code, title, description, className = '' }: Mer
     renderDiagram();
   }, [renderDiagram]);
 
-  // Handle ESC key to close fullscreen
+  // Reset zoom when entering fullscreen
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isFullscreen) {
-        setIsFullscreen(false);
-      }
-    };
-
     if (isFullscreen) {
-      document.addEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+      setZoom(1);
     }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-    };
   }, [isFullscreen]);
 
   const copyCode = () => {
@@ -160,9 +146,6 @@ export function MermaidDiagram({ code, title, description, className = '' }: Mer
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
-    if (!isFullscreen) {
-      setZoom(1); // Reset zoom when entering fullscreen
-    }
   };
 
   // Control buttons component (reused in both views)
@@ -283,98 +266,112 @@ export function MermaidDiagram({ code, title, description, className = '' }: Mer
       </div>
 
       {/* Fullscreen Modal */}
-      <AnimatePresence>
-        {isFullscreen && (
+      <Dialog
+        open={isFullscreen}
+        onClose={() => setIsFullscreen(false)}
+        fullScreen
+        maxWidth={false}
+        PaperProps={{
+          sx: {
+            m: 0,
+            width: '100vw',
+            height: '100vh',
+            maxWidth: '100vw',
+            maxHeight: '100vh',
+            backgroundColor: resolvedMode === 'dark' ? '#1e293b' : '#ffffff',
+          },
+        }}
+      >
+        <DialogContent
+          sx={{
+            p: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            overflow: 'hidden',
+            backgroundColor: resolvedMode === 'dark' ? '#1e293b' : '#ffffff',
+          }}
+        >
+          {/* Header */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex flex-col"
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className={`flex items-center justify-between px-6 py-4 border-b border-border/50 ${
+              resolvedMode === 'dark' ? 'bg-surface/80' : 'bg-white/90'
+            }`}
           >
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-overlay-heavy backdrop-blur-md"
-              onClick={() => setIsFullscreen(false)}
-            />
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-violet flex items-center justify-center">
+                <Fullscreen className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">
+                  {title || 'Diagram View'}
+                </h2>
+                {description && (
+                  <p className="text-sm text-muted">{description}</p>
+                )}
+              </div>
+            </div>
 
-            {/* Content */}
-            <div className="relative z-10 flex flex-col h-full">
-              {/* Header */}
-              <motion.div
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: -20, opacity: 0 }}
-                className="flex items-center justify-between px-6 py-4 bg-surface/80 backdrop-blur-xl border-b border-border/50"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-violet flex items-center justify-center">
-                    <Fullscreen className="text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-foreground">
-                      {title || 'Diagram View'}
-                    </h2>
-                    {description && (
-                      <p className="text-sm text-muted">{description}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <ControlButtons showFullscreenToggle={false} size="large" />
-                  <div className="w-px h-8 bg-border" />
-                  <Tooltip title="Close (ESC)">
-                    <button
-                      onClick={() => setIsFullscreen(false)}
-                      className="p-2.5 bg-surface/90 backdrop-blur-sm border border-border rounded-xl hover:bg-accent-coral/10 hover:border-accent-coral/30 hover:text-accent-coral transition-colors"
-                    >
-                      <Close className="w-5 h-5" />
-                    </button>
-                  </Tooltip>
-                </div>
-              </motion.div>
-
-              {/* Diagram Area */}
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                transition={{ delay: 0.1 }}
-                className="flex-1 overflow-auto p-6 flex items-center justify-center"
-              >
-                <div
-                  className="mermaid-svg transition-transform duration-200"
-                  style={{ 
-                    transform: `scale(${zoom})`, 
-                    transformOrigin: 'center center',
+            <div className="flex items-center gap-4">
+              <ControlButtons showFullscreenToggle={false} size="large" />
+              <div className="w-px h-8 bg-border" />
+              <Tooltip title="Close (ESC)">
+                <IconButton
+                  onClick={() => setIsFullscreen(false)}
+                  sx={{
+                    p: 1.5,
+                    '&:hover': {
+                      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                      borderColor: 'rgba(239, 68, 68, 0.3)',
+                    },
                   }}
-                  dangerouslySetInnerHTML={{ __html: svg }}
-                />
-              </motion.div>
-
-              {/* Footer hint */}
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 20, opacity: 0 }}
-                className="flex items-center justify-center gap-4 px-6 py-3 bg-surface/50 backdrop-blur-sm border-t border-border/50 text-sm text-muted"
-              >
-                <span className="flex items-center gap-1">
-                  <kbd className="px-2 py-0.5 bg-surface border border-border rounded text-xs font-mono">ESC</kbd>
-                  to close
-                </span>
-                <span>•</span>
-                <span>Scroll to pan</span>
-                <span>•</span>
-                <span>Use controls to zoom</span>
-              </motion.div>
+                >
+                  <Close />
+                </IconButton>
+              </Tooltip>
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
+
+          {/* Diagram Area */}
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className={`flex-1 overflow-auto p-6 flex items-center justify-center w-full min-h-0 ${
+              resolvedMode === 'dark' ? 'bg-surface' : 'bg-white'
+            }`}
+          >
+            <div
+              className="mermaid-svg transition-transform duration-200"
+              style={{ 
+                transform: `scale(${zoom})`, 
+                transformOrigin: 'center center',
+              }}
+              dangerouslySetInnerHTML={{ __html: svg }}
+            />
+          </motion.div>
+
+          {/* Footer hint */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className={`flex items-center justify-center gap-4 px-6 py-3 border-t border-border/50 text-sm text-muted ${
+              resolvedMode === 'dark' ? 'bg-surface/50' : 'bg-white/80'
+            }`}
+          >
+            <span className="flex items-center gap-1">
+              <kbd className="px-2 py-0.5 bg-surface border border-border rounded text-xs font-mono">ESC</kbd>
+              to close
+            </span>
+            <span>•</span>
+            <span>Scroll to pan</span>
+            <span>•</span>
+            <span>Use controls to zoom</span>
+          </motion.div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
