@@ -509,9 +509,16 @@ Format your response as JSON with keys: summary, keyInsights (array), methodolog
       ? paper.sections.map(s => `${s.title}: ${s.content.slice(0, 200)}...`).join('\n')
       : '';
 
-    // Build language instruction for diagram descriptions (not the Mermaid code itself)
-    const languageInstruction = userProfile?.preferredLanguage && userProfile.preferredLanguage.toLowerCase() !== 'english'
-      ? `\n\nIMPORTANT LANGUAGE REQUIREMENT: Write the "title" and "description" fields in ${userProfile.preferredLanguage}. The Mermaid "code" should use English for node IDs but labels can be in ${userProfile.preferredLanguage} if they fit.`
+    // Build language instruction for diagram text
+    const preferredLang = userProfile?.preferredLanguage?.trim();
+    const useNonEnglish = preferredLang && preferredLang.toLowerCase() !== 'english' && preferredLang.toLowerCase() !== 'en';
+    const languageInstruction = useNonEnglish
+      ? `\n\nIMPORTANT LANGUAGE REQUIREMENT: 
+- Write the "title" and "description" fields in ${preferredLang}
+- ALL text labels in the Mermaid diagram code (node labels, edge labels, etc.) MUST be in ${preferredLang}
+- Only use English for node IDs (e.g., "dataCollection", "step1") to ensure valid Mermaid syntax
+- Example for French: flowchart TD\n    dataCollection["Collecte de données"] --> preprocessing["Prétraitement"]\n    preprocessing --> modelTraining["Entraînement du modèle"]
+- Make sure all user-facing text in the diagram is in ${preferredLang}, not English`
       : '';
 
     const prompt = `Analyze the following research paper and create 2-3 Mermaid diagrams that best visualize its key concepts.
