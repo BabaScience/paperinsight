@@ -206,7 +206,7 @@ export function Layout() {
                     </div>
                     <div className="flex justify-between mt-1">
                       <span className="text-[10px] text-theme-muted">
-                        {t('nav.tokensLeft', { count: (tokenUsage.remaining / 1000).toFixed(1) })}
+                        {t('nav.tokensLeft', { value: (tokenUsage.remaining / 1000).toFixed(1) })}
                       </span>
                     </div>
                   </div>

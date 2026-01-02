@@ -39,7 +39,7 @@
     "profile": "Profile",
     "logout": "Logout",
     "tokens": "Tokens",
-    "tokensLeft": "{{count}}k left"
+    "tokensLeft": "{{value}}k left"
   },
   "auth": {
     "login": "Sign In",
