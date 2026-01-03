@@ -237,3 +237,58 @@ For higher traffic, consider:
 - [ ] Regular backups
 - [ ] Monitor logs for suspicious activity
 
+## CI/CD with GitHub Actions
+
+The project includes a GitHub Actions workflow that automatically deploys to production when code is pushed to the `main` branch.
+
+### Configure GitHub Secrets
+
+Add these secrets in your GitHub repository (**Settings > Secrets and variables > Actions > New repository secret**):
+
+| Secret | Description |
+|--------|-------------|
+| `DROPLET_HOST` | Your droplet's IP address (e.g., `167.71.123.45`) |
+| `DROPLET_USER` | SSH user (usually `root`) |
+| `SSH_PRIVATE_KEY` | Private SSH key for authentication |
+
+### Generate SSH Key for GitHub Actions
+
+1. **Generate a new SSH key** (on your local machine):
+
+```bash
+ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/github_actions -N ""
+```
+
+2. **Add the public key to your droplet**:
+
+```bash
+# Copy the public key
+cat ~/.ssh/github_actions.pub
+
+# SSH into your droplet and add to authorized_keys
+ssh root@YOUR_DROPLET_IP
+echo "YOUR_PUBLIC_KEY" >> ~/.ssh/authorized_keys
+```
+
+3. **Add the private key to GitHub Secrets**:
+
+```bash
+# Copy the private key content
+cat ~/.ssh/github_actions
+```
+
+Go to your GitHub repository > Settings > Secrets and variables > Actions > New repository secret:
+- Name: `SSH_PRIVATE_KEY`
+- Value: Paste the entire private key (including `-----BEGIN OPENSSH PRIVATE KEY-----` and `-----END OPENSSH PRIVATE KEY-----`)
+
+### How It Works
+
+- Push to `main` branch triggers automatic deployment
+- GitHub Actions SSHs into your droplet
+- Pulls the latest code and rebuilds Docker containers
+- You can also trigger manually from the Actions tab using "Run workflow"
+
+### View Deployment Status
+
+Check deployment logs at: `https://github.com/YOUR_USERNAME/YOUR_REPO/actions`
+
