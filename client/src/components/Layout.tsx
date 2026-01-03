@@ -300,7 +300,7 @@ export function Layout() {
 
         <NavLink
           to="/profile"
-          className="w-9 h-9 rounded-full bg-gradient-to-br from-accent-teal to-primary-500 flex items-center justify-center text-white font-medium"
+          className="w-11 h-11 rounded-full bg-gradient-to-br from-accent-teal to-primary-500 flex items-center justify-center text-white font-medium"
         >
           {user?.name?.charAt(0).toUpperCase() || 'U'}
         </NavLink>

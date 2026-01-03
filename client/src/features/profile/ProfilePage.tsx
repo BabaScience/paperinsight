@@ -220,31 +220,6 @@ export function ProfilePage() {
     }
   };
 
-  const handleReset = async () => {
-    try {
-      setIsSaving(true);
-      await profileApi.reset();
-      setProfile({});
-      setFormData({
-        researchField: '',
-        expertiseLevel: undefined,
-        interests: [],
-        currentProjects: '',
-        preferredStyle: undefined,
-        preferredLanguage: undefined,
-        preferredModel: undefined,
-        tokenLimit: 2000,
-        bio: '',
-      });
-      setHasChanges(false);
-    } catch (err) {
-      console.error('Failed to reset profile:', err);
-      setError('Failed to reset profile');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const addInterest = () => {
     if (newInterest.trim() && formData.interests && formData.interests.length < 10) {
       if (!formData.interests.includes(newInterest.trim())) {
@@ -313,15 +288,6 @@ export function ProfilePage() {
             </motion.span>
           )}
           <div className="flex items-center gap-2 sm:gap-3">
-            <Tooltip title={t('profile.resetToDefaults')}>
-              <button
-                onClick={handleReset}
-                disabled={isSaving}
-                className="p-2 sm:p-2.5 text-muted hover:text-accent-coral hover:bg-surface rounded-xl transition-colors disabled:opacity-50 touch-manipulation"
-              >
-                <Refresh className="w-5 h-5 sm:w-6 sm:h-6" />
-              </button>
-            </Tooltip>
             <motion.button
               onClick={handleSave}
               disabled={isSaving || !hasChanges}
