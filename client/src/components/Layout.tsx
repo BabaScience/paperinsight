@@ -348,7 +348,7 @@ export function Layout() {
       {/* Main content */}
       <main
         className="flex-1 transition-all duration-300 pt-16 lg:pt-0"
-        style={{ marginLeft: 0 }}
+        style={{ width: '100vw', marginLeft: 0 }}
       >
         <div 
           className="min-h-screen p-4 sm:p-6 lg:transition-all lg:duration-300"
