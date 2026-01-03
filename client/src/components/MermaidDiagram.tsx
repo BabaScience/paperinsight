@@ -149,20 +149,20 @@ export function MermaidDiagram({ code, title, description, className = '' }: Mer
   };
 
   // Control buttons component (reused in both views)
-  const ControlButtons = ({ showFullscreenToggle = true, size = 'small' }: { showFullscreenToggle?: boolean; size?: 'small' | 'large' }) => {
-    const iconClass = size === 'large' ? 'w-5 h-5' : 'w-4 h-4';
+  const ControlButtons = ({ showFullscreenToggle = true, size = 'small', isMobileFullscreen = false }: { showFullscreenToggle?: boolean; size?: 'small' | 'large'; isMobileFullscreen?: boolean }) => {
+    const iconClass = size === 'large' ? 'w-4 h-4 sm:w-5 sm:h-5' : 'w-4 h-4';
     const buttonClass = size === 'large' 
-      ? 'p-2.5 bg-surface/90 backdrop-blur-sm border border-border rounded-xl hover:bg-surface-hover transition-colors'
-      : 'p-1.5 bg-surface/90 backdrop-blur-sm border border-border rounded-lg hover:bg-surface-hover transition-colors';
+      ? 'p-2 sm:p-2.5 bg-surface/90 backdrop-blur-sm border border-border rounded-lg sm:rounded-xl hover:bg-surface-hover transition-colors touch-manipulation'
+      : 'p-1.5 bg-surface/90 backdrop-blur-sm border border-border rounded-lg hover:bg-surface-hover transition-colors touch-manipulation';
 
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 sm:gap-1">
         <Tooltip title="Zoom out">
           <button onClick={handleZoomOut} className={buttonClass}>
             <ZoomOut className={`${iconClass} text-muted`} />
           </button>
         </Tooltip>
-        <span className={`px-2 text-xs text-muted bg-surface/90 backdrop-blur-sm border border-border rounded-lg ${size === 'large' ? 'py-2' : 'py-1'}`}>
+        <span className={`px-1.5 sm:px-2 text-[10px] sm:text-xs text-muted bg-surface/90 backdrop-blur-sm border border-border rounded-md sm:rounded-lg ${size === 'large' ? 'py-1.5 sm:py-2' : 'py-1'}`}>
           {Math.round(zoom * 100)}%
         </span>
         <Tooltip title="Zoom in">
@@ -171,18 +171,18 @@ export function MermaidDiagram({ code, title, description, className = '' }: Mer
           </button>
         </Tooltip>
         <Tooltip title="Reset zoom">
-          <button onClick={handleResetZoom} className={buttonClass}>
+          <button onClick={handleResetZoom} className={`${buttonClass} ${isMobileFullscreen ? 'hidden xs:block' : ''}`}>
             <RestartAlt className={`${iconClass} text-muted`} />
           </button>
         </Tooltip>
-        <div className={`w-px ${size === 'large' ? 'h-6' : 'h-4'} bg-border mx-1`} />
+        <div className={`w-px ${size === 'large' ? 'h-5 sm:h-6' : 'h-4'} bg-border mx-0.5 sm:mx-1 ${isMobileFullscreen ? 'hidden xs:block' : ''}`} />
         <Tooltip title="Download SVG">
-          <button onClick={downloadSvg} className={buttonClass}>
+          <button onClick={downloadSvg} className={`${buttonClass} ${isMobileFullscreen ? 'hidden xs:block' : ''}`}>
             <Download className={`${iconClass} text-muted`} />
           </button>
         </Tooltip>
         <Tooltip title={copied ? 'Copied!' : 'Copy code'}>
-          <button onClick={copyCode} className={buttonClass}>
+          <button onClick={copyCode} className={`${buttonClass} ${isMobileFullscreen ? 'hidden sm:block' : ''}`}>
             {copied ? (
               <Check className={`${iconClass} text-accent-mint`} />
             ) : (
@@ -192,7 +192,7 @@ export function MermaidDiagram({ code, title, description, className = '' }: Mer
         </Tooltip>
         {showFullscreenToggle && (
           <>
-            <div className={`w-px ${size === 'large' ? 'h-6' : 'h-4'} bg-border mx-1`} />
+            <div className={`w-px ${size === 'large' ? 'h-5 sm:h-6' : 'h-4'} bg-border mx-0.5 sm:mx-1`} />
             <Tooltip title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
               <button onClick={toggleFullscreen} className={buttonClass}>
                 {isFullscreen ? (
@@ -231,16 +231,16 @@ export function MermaidDiagram({ code, title, description, className = '' }: Mer
     <>
       {/* Normal View */}
       <div className={`relative group ${className}`}>
-        {/* Controls */}
-        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Controls - Always visible on mobile, hover on desktop */}
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
           <ControlButtons />
         </div>
 
         {/* Diagram container */}
         <motion.div
           ref={containerRef}
-          className="overflow-auto bg-surface/30 rounded-xl border border-border/50 p-4 min-h-[200px] flex items-center justify-center cursor-pointer"
-          style={{ maxHeight: '500px' }}
+          className="overflow-auto bg-surface/30 rounded-lg sm:rounded-xl border border-border/50 p-2 sm:p-4 min-h-[150px] sm:min-h-[200px] flex items-center justify-center cursor-pointer touch-manipulation"
+          style={{ maxHeight: '400px' }}
           onClick={() => !isFullscreen && setIsFullscreen(true)}
         >
           {svg ? (
@@ -251,16 +251,17 @@ export function MermaidDiagram({ code, title, description, className = '' }: Mer
             />
           ) : (
             <div className="flex items-center gap-2 text-muted">
-              <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm">Rendering diagram...</span>
+              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs sm:text-sm">Rendering diagram...</span>
             </div>
           )}
         </motion.div>
 
-        {/* Click hint */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-          <span className="text-xs text-muted bg-surface/90 backdrop-blur-sm px-3 py-1.5 rounded-full border border-border">
-            Click to view fullscreen
+        {/* Tap/Click hint */}
+        <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity pointer-events-none">
+          <span className="text-[10px] sm:text-xs text-muted bg-surface/90 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-border">
+            <span className="sm:hidden">Tap to expand</span>
+            <span className="hidden sm:inline">Click to view fullscreen</span>
           </span>
         </div>
       </div>
@@ -296,39 +297,39 @@ export function MermaidDiagram({ code, title, description, className = '' }: Mer
           <motion.div
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className={`flex items-center justify-between px-6 py-4 border-b border-border/50 ${
+            className={`flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b border-border/50 ${
               resolvedMode === 'dark' ? 'bg-surface/80' : 'bg-white/90'
             }`}
           >
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-violet flex items-center justify-center">
-                <Fullscreen className="text-white" />
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary-500 to-accent-violet flex items-center justify-center flex-shrink-0">
+                <Fullscreen className="text-white text-lg sm:text-xl" />
               </div>
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">
+              <div className="min-w-0">
+                <h2 className="text-sm sm:text-lg font-semibold text-foreground truncate">
                   {title || 'Diagram View'}
                 </h2>
                 {description && (
-                  <p className="text-sm text-muted">{description}</p>
+                  <p className="text-xs sm:text-sm text-muted line-clamp-1 sm:line-clamp-none">{description}</p>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <ControlButtons showFullscreenToggle={false} size="large" />
-              <div className="w-px h-8 bg-border" />
+            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+              <ControlButtons showFullscreenToggle={false} size="large" isMobileFullscreen={true} />
+              <div className="hidden sm:block w-px h-8 bg-border" />
               <Tooltip title="Close (ESC)">
                 <IconButton
                   onClick={() => setIsFullscreen(false)}
                   sx={{
-                    p: 1.5,
+                    p: { xs: 1, sm: 1.5 },
                     '&:hover': {
                       backgroundColor: 'rgba(239, 68, 68, 0.1)',
                       borderColor: 'rgba(239, 68, 68, 0.3)',
                     },
                   }}
                 >
-                  <Close />
+                  <Close sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
                 </IconButton>
               </Tooltip>
             </div>
@@ -357,18 +358,18 @@ export function MermaidDiagram({ code, title, description, className = '' }: Mer
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className={`flex items-center justify-center gap-4 px-6 py-3 border-t border-border/50 text-sm text-muted ${
+            className={`flex items-center justify-center gap-2 sm:gap-4 px-3 sm:px-6 py-2 sm:py-3 border-t border-border/50 text-xs sm:text-sm text-muted ${
               resolvedMode === 'dark' ? 'bg-surface/50' : 'bg-white/80'
             }`}
           >
             <span className="flex items-center gap-1">
-              <kbd className="px-2 py-0.5 bg-surface border border-border rounded text-xs font-mono">ESC</kbd>
-              to close
+              <kbd className="px-1.5 sm:px-2 py-0.5 bg-surface border border-border rounded text-[10px] sm:text-xs font-mono">ESC</kbd>
+              <span className="hidden xs:inline">to close</span>
             </span>
+            <span className="hidden sm:inline">•</span>
+            <span className="hidden sm:inline">Scroll to pan</span>
             <span>•</span>
-            <span>Scroll to pan</span>
-            <span>•</span>
-            <span>Use controls to zoom</span>
+            <span>Pinch/controls to zoom</span>
           </motion.div>
         </DialogContent>
       </Dialog>

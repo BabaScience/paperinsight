@@ -72,60 +72,60 @@ function IdeaCard({ idea, index }: { idea: ImplementationIdea; index: number }) 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="bg-surface/50 border border-border/50 rounded-2xl overflow-hidden hover:border-primary-500/30 transition-all"
+      className="bg-surface/50 border border-border/50 rounded-xl sm:rounded-2xl overflow-hidden hover:border-primary-500/30 transition-all"
     >
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full p-4 flex items-start gap-4 text-left hover:bg-surface/30 transition-colors"
+        className="w-full p-3 sm:p-4 flex items-start gap-2 sm:gap-4 text-left hover:bg-surface/30 transition-colors touch-manipulation"
       >
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500/20 to-accent-violet/20 flex items-center justify-center flex-shrink-0">
-          <span className="text-2xl">{diffConfig.icon}</span>
+        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary-500/20 to-accent-violet/20 flex items-center justify-center flex-shrink-0">
+          <span className="text-xl sm:text-2xl">{diffConfig.icon}</span>
         </div>
         
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <h4 className="font-semibold text-foreground leading-tight">
+          <div className="flex flex-col xs:flex-row xs:items-start xs:justify-between gap-1 xs:gap-2">
+            <h4 className="font-semibold text-foreground leading-tight text-sm sm:text-base line-clamp-2 xs:line-clamp-none">
               {idea.title}
             </h4>
-            <span className={`px-2 py-0.5 text-xs font-medium rounded-full border flex-shrink-0 ${diffConfig.color}`}>
+            <span className={`px-2 py-0.5 text-xs font-medium rounded-full border flex-shrink-0 self-start ${diffConfig.color}`}>
               {diffConfig.label}
             </span>
           </div>
           
-          <p className="text-sm text-muted mt-1 line-clamp-2">
+          <p className="text-xs sm:text-sm text-muted mt-1 line-clamp-2">
             {idea.description}
           </p>
           
           {/* Relevance badge */}
           <div className="flex items-center gap-1.5 mt-2 text-xs text-primary-400">
-            <Star className="w-3 h-3" />
+            <Star className="w-3 h-3 flex-shrink-0" />
             <span className="line-clamp-1">{idea.relevance}</span>
           </div>
         </div>
         
-        <div className="flex-shrink-0 ml-2">
+        <div className="flex-shrink-0 ml-1 sm:ml-2">
           {expanded ? (
-            <ExpandLess className="text-muted" />
+            <ExpandLess className="text-muted w-5 h-5 sm:w-6 sm:h-6" />
           ) : (
-            <ExpandMore className="text-muted" />
+            <ExpandMore className="text-muted w-5 h-5 sm:w-6 sm:h-6" />
           )}
         </div>
       </button>
 
       {/* Expanded content */}
       <Collapse in={expanded}>
-        <div className="px-4 pb-4 space-y-4 border-t border-border/30 pt-4">
+        <div className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-3 sm:space-y-4 border-t border-border/30 pt-3 sm:pt-4">
           {/* Implementation Steps */}
           <div>
-            <h5 className="text-sm font-medium text-foreground flex items-center gap-2 mb-2">
-              <TrendingUp className="w-4 h-4 text-primary-400" />
+            <h5 className="text-xs sm:text-sm font-medium text-foreground flex items-center gap-2 mb-2">
+              <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-400 flex-shrink-0" />
               {t('ideas.implementationSteps')}
             </h5>
             <ol className="space-y-2">
               {idea.steps.map((step, idx) => (
-                <li key={idx} className="flex items-start gap-3 text-sm">
-                  <span className="w-6 h-6 rounded-full bg-primary-500/10 text-primary-400 flex items-center justify-center flex-shrink-0 text-xs font-medium">
+                <li key={idx} className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm">
+                  <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary-500/10 text-primary-400 flex items-center justify-center flex-shrink-0 text-xs font-medium">
                     {idx + 1}
                   </span>
                   <span className="text-muted pt-0.5">{step}</span>
@@ -137,11 +137,11 @@ function IdeaCard({ idea, index }: { idea: ImplementationIdea; index: number }) 
           {/* Tools */}
           {idea.tools && idea.tools.length > 0 && (
             <div>
-              <h5 className="text-sm font-medium text-foreground flex items-center gap-2 mb-2">
-                <Code className="w-4 h-4 text-accent-teal" />
+              <h5 className="text-xs sm:text-sm font-medium text-foreground flex items-center gap-2 mb-2">
+                <Code className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent-teal flex-shrink-0" />
                 {t('ideas.suggestedTools')}
               </h5>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1 sm:gap-1.5">
                 {idea.tools.map((tool, idx) => (
                   <Chip
                     key={idx}
@@ -151,7 +151,8 @@ function IdeaCard({ idea, index }: { idea: ImplementationIdea; index: number }) 
                       backgroundColor: 'rgb(var(--color-surface))',
                       color: 'rgb(var(--color-text-secondary))',
                       border: '1px solid rgb(var(--color-border))',
-                      fontSize: '0.75rem',
+                      fontSize: { xs: '0.625rem', sm: '0.75rem' },
+                      height: { xs: '22px', sm: '24px' },
                     }}
                   />
                 ))}
@@ -162,15 +163,15 @@ function IdeaCard({ idea, index }: { idea: ImplementationIdea; index: number }) 
           {/* Related Concepts */}
           {idea.relatedConcepts && idea.relatedConcepts.length > 0 && (
             <div>
-              <h5 className="text-sm font-medium text-foreground flex items-center gap-2 mb-2">
-                <Psychology className="w-4 h-4 text-accent-violet" />
+              <h5 className="text-xs sm:text-sm font-medium text-foreground flex items-center gap-2 mb-2">
+                <Psychology className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent-violet flex-shrink-0" />
                 {t('ideas.relatedConcepts')}
               </h5>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1 sm:gap-1.5">
                 {idea.relatedConcepts.map((concept, idx) => (
                   <span
                     key={idx}
-                    className="px-2 py-1 text-xs bg-accent-violet/10 text-accent-violet rounded-lg"
+                    className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs bg-accent-violet/10 text-accent-violet rounded-md sm:rounded-lg"
                   >
                     {concept}
                   </span>
@@ -294,27 +295,27 @@ export function IdeasPanel({ paperId }: IdeasPanelProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-gold to-accent-coral flex items-center justify-center shadow-lg">
-            <Lightbulb className="text-white" />
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-accent-gold to-accent-coral flex items-center justify-center shadow-lg flex-shrink-0">
+            <Lightbulb className="text-white text-lg sm:text-xl" />
           </div>
-          <div>
-            <h3 className="font-semibold text-foreground">{t('ideas.title')}</h3>
-            <p className="text-sm text-muted">
+          <div className="min-w-0">
+            <h3 className="font-semibold text-foreground text-sm sm:text-base truncate">{t('ideas.title')}</h3>
+            <p className="text-xs sm:text-sm text-muted">
               {t('ideas.ideaCount', { count: ideas.length })}
             </p>
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
           {cached && (
             <Tooltip title={t('ideas.cachedTooltip')}>
-              <span className="flex items-center gap-1 px-2 py-1 text-xs bg-accent-mint/10 text-accent-mint rounded-lg">
+              <span className="hidden xs:flex items-center gap-1 px-2 py-1 text-xs bg-accent-mint/10 text-accent-mint rounded-lg">
                 <CheckCircle className="w-3 h-3" />
-                {t('ideas.cached')}
+                <span className="hidden sm:inline">{t('ideas.cached')}</span>
               </span>
             </Tooltip>
           )}
@@ -322,12 +323,12 @@ export function IdeasPanel({ paperId }: IdeasPanelProps) {
             <button
               onClick={handleRegenerate}
               disabled={isRegenerating}
-              className="p-2 text-muted hover:text-foreground hover:bg-surface rounded-xl transition-colors disabled:opacity-50"
+              className="p-1.5 sm:p-2 text-muted hover:text-foreground hover:bg-surface rounded-lg sm:rounded-xl transition-colors disabled:opacity-50 touch-manipulation"
             >
               {isRegenerating ? (
-                <CircularProgress size={20} className="text-primary-500" />
+                <CircularProgress size={18} className="text-primary-500" />
               ) : (
-                <Refresh className="w-5 h-5" />
+                <Refresh className="w-4 h-4 sm:w-5 sm:h-5" />
               )}
             </button>
           </Tooltip>
@@ -339,29 +340,31 @@ export function IdeasPanel({ paperId }: IdeasPanelProps) {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-primary-500/5 border border-primary-500/20 rounded-xl"
+          className="p-2.5 sm:p-3 bg-primary-500/5 border border-primary-500/20 rounded-lg sm:rounded-xl"
         >
-          <div className="flex items-center gap-2 text-sm text-primary-400 mb-2">
-            <Person className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-primary-400 mb-2">
+            <Person className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
             <span className="font-medium">{t('ideas.tailoredToProfile')}</span>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 text-[10px] sm:text-xs">
             {userContext.researchField && (
-              <span className="flex items-center gap-1 px-2 py-1 bg-surface rounded-lg text-muted">
-                <School className="w-3 h-3" />
-                {userContext.researchField}
+              <span className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-surface rounded-md sm:rounded-lg text-muted">
+                <School className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                <span className="truncate max-w-[100px] sm:max-w-none">{userContext.researchField}</span>
               </span>
             )}
             {userContext.interests && userContext.interests.length > 0 && (
-              <span className="flex items-center gap-1 px-2 py-1 bg-surface rounded-lg text-muted">
-                <Star className="w-3 h-3" />
-                {userContext.interests.slice(0, 3).join(', ')}
-                {userContext.interests.length > 3 && ` +${userContext.interests.length - 3}`}
+              <span className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-surface rounded-md sm:rounded-lg text-muted">
+                <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                <span className="truncate max-w-[120px] sm:max-w-none">
+                  {userContext.interests.slice(0, 2).join(', ')}
+                  {userContext.interests.length > 2 && ` +${userContext.interests.length - 2}`}
+                </span>
               </span>
             )}
             {userContext.currentProjects && (
-              <span className="flex items-center gap-1 px-2 py-1 bg-surface rounded-lg text-muted">
-                <Work className="w-3 h-3" />
+              <span className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-surface rounded-md sm:rounded-lg text-muted">
+                <Work className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
                 {t('ideas.projectsActive')}
               </span>
             )}
@@ -374,10 +377,10 @@ export function IdeasPanel({ paperId }: IdeasPanelProps) {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-accent-gold/5 border border-accent-gold/20 rounded-xl"
+          className="p-2.5 sm:p-3 bg-accent-gold/5 border border-accent-gold/20 rounded-lg sm:rounded-xl"
         >
-          <div className="flex items-center gap-2 text-sm text-accent-gold">
-            <Person className="w-4 h-4" />
+          <div className="flex items-start sm:items-center gap-2 text-xs sm:text-sm text-accent-gold">
+            <Person className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5 sm:mt-0" />
             <span>
               <strong>{t('ideas.tip')}:</strong> {t('ideas.completeProfile')}
             </span>
@@ -395,14 +398,15 @@ export function IdeasPanel({ paperId }: IdeasPanelProps) {
       </AnimatePresence>
 
       {/* Difficulty Legend */}
-      <div className="pt-4 border-t border-border/50">
-        <p className="text-xs text-muted mb-2">{t('ideas.difficultyLevels')}:</p>
-        <div className="flex flex-wrap gap-3">
+      <div className="pt-3 sm:pt-4 border-t border-border/50">
+        <p className="text-[10px] sm:text-xs text-muted mb-2">{t('ideas.difficultyLevels')}:</p>
+        <div className="flex flex-col xs:flex-row xs:flex-wrap gap-2 xs:gap-3">
           {Object.entries(DIFFICULTY_CONFIG).map(([key, config]) => (
             <div key={key} className="flex items-center gap-1.5">
               <span className="text-sm">{config.icon}</span>
-              <span className="text-xs text-muted">
-                {t(`ideas.difficulty.${key}`)} - {t(`ideas.difficultyDesc.${key}`)}
+              <span className="text-[10px] sm:text-xs text-muted">
+                <span className="font-medium">{t(`ideas.difficulty.${key}`)}</span>
+                <span className="hidden xs:inline"> - {t(`ideas.difficultyDesc.${key}`)}</span>
               </span>
             </div>
           ))}

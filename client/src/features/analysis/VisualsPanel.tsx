@@ -147,27 +147,27 @@ export function VisualsPanel({ paperId }: VisualsPanelProps) {
   const gradientColor = DIAGRAM_COLORS[currentDiagram.type] || 'from-primary-500 to-accent-violet';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradientColor} flex items-center justify-center shadow-lg`}>
-            <AutoAwesome className="text-white" />
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br ${gradientColor} flex items-center justify-center shadow-lg flex-shrink-0`}>
+            <AutoAwesome className="text-white text-lg sm:text-xl" />
           </div>
-          <div>
-            <h3 className="font-semibold text-foreground">{t('visuals.title')}</h3>
-            <p className="text-sm text-muted">
+          <div className="min-w-0">
+            <h3 className="font-semibold text-foreground text-sm sm:text-base truncate">{t('visuals.title')}</h3>
+            <p className="text-xs sm:text-sm text-muted">
               {t('visuals.diagramCount', { count: diagrams.length })}
             </p>
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
           {cached && (
             <Tooltip title={t('visuals.cachedTooltip')}>
-              <span className="flex items-center gap-1 px-2 py-1 text-xs bg-accent-mint/10 text-accent-mint rounded-lg">
+              <span className="hidden xs:flex items-center gap-1 px-2 py-1 text-xs bg-accent-mint/10 text-accent-mint rounded-lg">
                 <CheckCircle className="w-3 h-3" />
-                {t('visuals.cached')}
+                <span className="hidden sm:inline">{t('visuals.cached')}</span>
               </span>
             </Tooltip>
           )}
@@ -175,12 +175,12 @@ export function VisualsPanel({ paperId }: VisualsPanelProps) {
             <button
               onClick={handleRegenerate}
               disabled={isRegenerating}
-              className="p-2 text-muted hover:text-foreground hover:bg-surface rounded-xl transition-colors disabled:opacity-50"
+              className="p-1.5 sm:p-2 text-muted hover:text-foreground hover:bg-surface rounded-lg sm:rounded-xl transition-colors disabled:opacity-50 touch-manipulation"
             >
               {isRegenerating ? (
-                <CircularProgress size={20} className="text-primary-500" />
+                <CircularProgress size={18} className="text-primary-500" />
               ) : (
-                <Refresh className="w-5 h-5" />
+                <Refresh className="w-4 h-4 sm:w-5 sm:h-5" />
               )}
             </button>
           </Tooltip>
@@ -188,7 +188,7 @@ export function VisualsPanel({ paperId }: VisualsPanelProps) {
       </div>
 
       {/* Diagram Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+      <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 scrollbar-thin -mx-1 px-1">
         {diagrams.map((diagram, idx) => {
           const DiagramIcon = DIAGRAM_ICONS[diagram.type] || AccountTree;
           const isSelected = idx === selectedDiagram;
@@ -198,20 +198,19 @@ export function VisualsPanel({ paperId }: VisualsPanelProps) {
             <motion.button
               key={idx}
               onClick={() => setSelectedDiagram(idx)}
-              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all ${
+              className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border transition-all touch-manipulation ${
                 isSelected
                   ? 'border-primary-500 bg-primary-500/10 text-primary-500'
                   : 'border-border bg-surface/50 text-muted hover:text-foreground hover:border-primary-500/30'
               }`}
             >
-              <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
+              <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-md sm:rounded-lg flex items-center justify-center ${
                 isSelected ? `bg-gradient-to-br ${color}` : 'bg-surface'
               }`}>
-                <DiagramIcon className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-muted'}`} />
+                <DiagramIcon className={`w-3 h-3 sm:w-4 sm:h-4 ${isSelected ? 'text-white' : 'text-muted'}`} />
               </div>
-              <span className="text-sm font-medium whitespace-nowrap">
+              <span className="text-xs sm:text-sm font-medium whitespace-nowrap max-w-[100px] sm:max-w-none truncate">
                 {diagram.title}
               </span>
             </motion.button>
@@ -227,21 +226,21 @@ export function VisualsPanel({ paperId }: VisualsPanelProps) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className="space-y-4"
+          className="space-y-3 sm:space-y-4"
         >
           {/* Diagram Info */}
-          <div className="flex items-start gap-3 p-4 bg-surface/50 rounded-xl border border-border/50">
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradientColor} flex items-center justify-center flex-shrink-0`}>
-              <Icon className="text-white" />
+          <div className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 bg-surface/50 rounded-lg sm:rounded-xl border border-border/50">
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br ${gradientColor} flex items-center justify-center flex-shrink-0`}>
+              <Icon className="text-white text-lg sm:text-xl" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h4 className="font-medium text-foreground">{currentDiagram.title}</h4>
-                <span className="px-2 py-0.5 text-xs bg-primary-500/10 text-primary-500 rounded-full capitalize">
+              <div className="flex flex-col xs:flex-row xs:items-center gap-1 xs:gap-2">
+                <h4 className="font-medium text-foreground text-sm sm:text-base truncate">{currentDiagram.title}</h4>
+                <span className="px-2 py-0.5 text-xs bg-primary-500/10 text-primary-500 rounded-full capitalize self-start xs:self-auto flex-shrink-0">
                   {currentDiagram.type}
                 </span>
               </div>
-              <p className="text-sm text-muted mt-1">{currentDiagram.description}</p>
+              <p className="text-xs sm:text-sm text-muted mt-1 line-clamp-2 sm:line-clamp-none">{currentDiagram.description}</p>
             </div>
           </div>
 
@@ -261,12 +260,14 @@ export function VisualsPanel({ paperId }: VisualsPanelProps) {
             <button
               key={idx}
               onClick={() => setSelectedDiagram(idx)}
-              className={`w-2 h-2 rounded-full transition-all ${
+              className={`w-8 h-8 rounded-full transition-all ${
                 idx === selectedDiagram
                   ? 'bg-primary-500 w-6'
-                  : 'bg-border hover:bg-muted'
+                  : 'bg-primary-500/20 hover:bg-muted'
               }`}
-            />
+            >
+              <span className=" text-white">{idx + 1}</span>
+            </button>
           ))}
         </div>
       )}
