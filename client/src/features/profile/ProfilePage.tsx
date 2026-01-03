@@ -8,7 +8,6 @@ import {
   Work,
   Description,
   Save,
-  Refresh,
   Add,
   Close,
   CheckCircle,
@@ -21,7 +20,7 @@ import {
   HourglassEmpty,
   DataUsage,
 } from '@mui/icons-material';
-import { CircularProgress, Tooltip, Chip, Slider, LinearProgress } from '@mui/material';
+import { CircularProgress, Chip, Slider, LinearProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { profileApi, ProfileData, PreferredModel, TokenUsageInfo } from '@/lib/api';
 import { useProfileStore, ExpertiseLevel, PreferredStyle } from '@/stores/profileStore';

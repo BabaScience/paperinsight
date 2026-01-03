@@ -13,11 +13,12 @@
     "build": "npm run build --workspace=client && npm run build --workspace=server",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "clean": "rm -rf node_modules client/node_modules server/node_modules"
+    "clean": "rm -rf node_modules client/node_modules server/node_modules",
+    "prepare": "husky"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
+    "husky": "^9.1.7",
     "typescript": "^5.3.3"
   }
 }
-
