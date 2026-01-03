@@ -71,14 +71,14 @@ export function DashboardPage() {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="space-y-8"
+      className="space-y-6 sm:space-y-8"
     >
       {/* Header */}
       <motion.div variants={itemVariants}>
-        <h1 className="text-3xl font-display font-bold text-theme-primary">
+        <h1 className="text-2xl sm:text-3xl font-display font-bold text-theme-primary">
           {t('dashboard.welcomeUser', { name: user?.name?.split(' ')[0] })}
         </h1>
-        <p className="text-theme-muted mt-1">
+        <p className="text-theme-muted mt-1 text-sm sm:text-base">
           {t('dashboard.overview')}
         </p>
       </motion.div>
@@ -86,21 +86,21 @@ export function DashboardPage() {
       {/* Stats */}
       <motion.div
         variants={itemVariants}
-        className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6"
       >
         {stats.map((stat) => (
           <div key={stat.label} className="card group cursor-default">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-theme-muted text-sm font-medium">{stat.label}</p>
-                <p className="text-3xl font-bold text-theme-primary mt-2">
+                <p className="text-theme-muted text-xs sm:text-sm font-medium">{stat.label}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-theme-primary mt-1 sm:mt-2">
                   {stat.value}
                 </p>
               </div>
               <div
-                className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg`}
+                className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg flex-shrink-0`}
               >
-                <stat.icon className="text-white" />
+                <stat.icon className="text-white text-lg sm:text-xl" />
               </div>
             </div>
           </div>
@@ -109,35 +109,35 @@ export function DashboardPage() {
 
       {/* Quick Actions */}
       <motion.div variants={itemVariants}>
-        <h2 className="text-xl font-display font-semibold text-theme-primary mb-4">
+        <h2 className="text-lg sm:text-xl font-display font-semibold text-theme-primary mb-3 sm:mb-4">
           {t('dashboard.quickActions')}
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link to="/upload" className="card card-hover group">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                <Upload className="text-white text-2xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <Link to="/upload" className="card card-hover group touch-manipulation">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform flex-shrink-0">
+                <Upload className="text-white text-xl sm:text-2xl" />
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-theme-primary">
+              <div className="min-w-0">
+                <h3 className="text-base sm:text-lg font-semibold text-theme-primary truncate">
                   {t('dashboard.uploadPaper')}
                 </h3>
-                <p className="text-theme-muted text-sm">
+                <p className="text-theme-muted text-xs sm:text-sm truncate">
                   {t('dashboard.addNewPaper')}
                 </p>
               </div>
             </div>
           </Link>
-          <Link to="/library" className="card card-hover group">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent-teal to-primary-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                <Description className="text-white text-2xl" />
+          <Link to="/library" className="card card-hover group touch-manipulation">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-accent-teal to-primary-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform flex-shrink-0">
+                <Description className="text-white text-xl sm:text-2xl" />
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-theme-primary">
+              <div className="min-w-0">
+                <h3 className="text-base sm:text-lg font-semibold text-theme-primary truncate">
                   {t('dashboard.viewLibrary')}
                 </h3>
-                <p className="text-theme-muted text-sm">
+                <p className="text-theme-muted text-xs sm:text-sm truncate">
                   {t('dashboard.browseAllPapers')}
                 </p>
               </div>
@@ -148,14 +148,14 @@ export function DashboardPage() {
 
       {/* Recent Papers */}
       <motion.div variants={itemVariants}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-display font-semibold text-theme-primary">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h2 className="text-lg sm:text-xl font-display font-semibold text-theme-primary">
             {t('dashboard.recentPapers')}
           </h2>
           {papers.length > 0 && (
             <Link
               to="/library"
-              className="text-primary-400 hover:text-primary-300 text-sm font-medium"
+              className="text-primary-400 hover:text-primary-300 text-sm font-medium touch-manipulation"
             >
               {t('common.viewAll')} →
             </Link>
@@ -163,7 +163,7 @@ export function DashboardPage() {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[1, 2, 3].map((i) => (
               <div key={i} className="card animate-pulse">
                 <div className="h-4 bg-theme-tertiary rounded w-3/4 mb-4" />
@@ -173,14 +173,14 @@ export function DashboardPage() {
             ))}
           </div>
         ) : papers.length === 0 ? (
-          <div className="card text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-theme-secondary flex items-center justify-center">
-              <Description className="text-theme-muted text-3xl" />
+          <div className="card text-center py-8 sm:py-12">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-4 rounded-full bg-theme-secondary flex items-center justify-center">
+              <Description className="text-theme-muted text-2xl sm:text-3xl" />
             </div>
-            <h3 className="text-lg font-semibold text-theme-secondary mb-2">
+            <h3 className="text-base sm:text-lg font-semibold text-theme-secondary mb-2">
               {t('dashboard.noPapers')}
             </h3>
-            <p className="text-theme-muted mb-4">
+            <p className="text-theme-muted mb-4 text-sm sm:text-base">
               {t('dashboard.uploadFirstPaper')}
             </p>
             <Link to="/upload" className="btn-primary inline-flex items-center gap-2">
@@ -189,7 +189,7 @@ export function DashboardPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {papers.slice(0, 6).map((paper: any) => (
               <PaperCard key={paper._id} paper={paper} />
             ))}

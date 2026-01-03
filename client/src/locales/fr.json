@@ -2,6 +2,7 @@
   "common": {
     "save": "Enregistrer",
     "cancel": "Annuler",
+    "back": "Retour",
     "loading": "Chargement...",
     "error": "Erreur",
     "success": "Succès",

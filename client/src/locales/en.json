@@ -2,6 +2,7 @@
   "common": {
     "save": "Save",
     "cancel": "Cancel",
+    "back": "Go back",
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",

@@ -281,60 +281,63 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 via-accent-violet to-accent-coral flex items-center justify-center shadow-lg shadow-primary-500/25">
-            <Person className="text-white text-3xl" />
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary-500 via-accent-violet to-accent-coral flex items-center justify-center shadow-lg shadow-primary-500/25 flex-shrink-0">
+            <Person className="text-white text-2xl sm:text-3xl" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
               {t('profile.title')}
             </h1>
-            <p className="text-muted">
+            <p className="text-muted text-sm sm:text-base">
               {t('profile.subtitle')}
             </p>
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
           {hasChanges && (
             <motion.span
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="text-sm text-accent-gold"
+              className="text-xs sm:text-sm text-accent-gold"
             >
               {t('profile.unsavedChanges')}
             </motion.span>
           )}
-          <Tooltip title={t('profile.resetToDefaults')}>
-            <button
-              onClick={handleReset}
-              disabled={isSaving}
-              className="p-2.5 text-muted hover:text-accent-coral hover:bg-surface rounded-xl transition-colors disabled:opacity-50"
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Tooltip title={t('profile.resetToDefaults')}>
+              <button
+                onClick={handleReset}
+                disabled={isSaving}
+                className="p-2 sm:p-2.5 text-muted hover:text-accent-coral hover:bg-surface rounded-xl transition-colors disabled:opacity-50 touch-manipulation"
+              >
+                <Refresh className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            </Tooltip>
+            <motion.button
+              onClick={handleSave}
+              disabled={isSaving || !hasChanges}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="btn-primary flex items-center gap-2 disabled:opacity-50 text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
             >
-              <Refresh />
-            </button>
-          </Tooltip>
-          <motion.button
-            onClick={handleSave}
-            disabled={isSaving || !hasChanges}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="btn-primary flex items-center gap-2 disabled:opacity-50"
-          >
-            {isSaving ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : (
-              <Save />
-            )}
-            {t('profile.saveProfile')}
-          </motion.button>
+              {isSaving ? (
+                <CircularProgress size={18} color="inherit" />
+              ) : (
+                <Save className="w-4 h-4 sm:w-5 sm:h-5" />
+              )}
+              <span className="hidden xs:inline">{t('profile.saveProfile')}</span>
+              <span className="xs:hidden">{t('common.save')}</span>
+            </motion.button>
+          </div>
         </div>
       </motion.div>
 
@@ -838,28 +841,28 @@ export function ProfilePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 xs:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
             {LANGUAGE_OPTIONS.map((option) => (
               <motion.button
                 key={option.value}
                 onClick={() => setFormData({ ...formData, preferredLanguage: option.value })}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className={`p-3 rounded-xl border-2 text-left transition-all ${
+                className={`p-2.5 sm:p-3 rounded-xl border-2 text-left transition-all touch-manipulation ${
                   formData.preferredLanguage === option.value
                     ? 'border-primary-500 bg-primary-500/10'
-                    : 'border-border hover:border-primary-500/30 hover:bg-surface'
+                    : 'border-border hover:border-primary-500/30 hover:bg-surface active:bg-surface'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{option.flag}</span>
-                  <div>
-                    <p className={`font-medium text-sm ${
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="text-lg sm:text-xl">{option.flag}</span>
+                  <div className="min-w-0">
+                    <p className={`font-medium text-xs sm:text-sm truncate ${
                       formData.preferredLanguage === option.value ? 'text-primary-500' : 'text-foreground'
                     }`}>
                       {option.label}
                     </p>
-                    <p className="text-xs text-muted">{option.value}</p>
+                    <p className="text-[10px] sm:text-xs text-muted truncate">{option.value}</p>
                   </div>
                 </div>
               </motion.button>

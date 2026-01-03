@@ -56,7 +56,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Theme & Language Toggle */}
       <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
         <LanguageSwitcherSimple />
@@ -64,7 +64,7 @@ export function LoginPage() {
       </div>
 
       {/* Left side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 pt-16 sm:pt-20 lg:pt-8">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -72,18 +72,18 @@ export function LoginPage() {
           className="w-full max-w-md"
         >
           {/* Logo */}
-          <div className="flex items-center gap-3 mb-8">
+          <div className="flex items-center gap-3 mb-6 sm:mb-8">
             <img 
               src={resolvedMode === 'dark' ? '/lunai-logo-dark.svg' : '/lunai-logo-light.svg'} 
               alt="LUNAI" 
-              className="h-12 w-auto"
+              className="h-10 sm:h-12 w-auto"
             />
           </div>
 
-          <h1 className="text-3xl font-display font-bold text-theme-primary mb-2">
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-theme-primary mb-2">
             {t('auth.welcomeBack')}
           </h1>
-          <p className="text-theme-muted mb-8">
+          <p className="text-theme-muted mb-6 sm:mb-8 text-sm sm:text-base">
             {t('auth.signInToContinue')}
           </p>
 

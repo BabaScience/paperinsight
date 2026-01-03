@@ -200,41 +200,42 @@ export function AnalysisPage() {
   const sections = paper.sections || [];
 
   return (
-    <div className="h-[calc(100vh-3rem)] flex flex-col overflow-hidden">
+    <div className="h-[calc(100vh-5rem)] lg:h-[calc(100vh-3rem)] flex flex-col overflow-hidden">
       {/* Header - Fixed */}
-      <div className="flex-shrink-0 pb-4">
-        <div className="flex items-start gap-4">
+      <div className="flex-shrink-0 pb-3 sm:pb-4">
+        <div className="flex items-start gap-2 sm:gap-4">
           <button
             onClick={() => navigate('/library')}
-            className="p-2 hover:bg-surface/70 rounded-lg transition-colors mt-1"
+            className="p-2 hover:bg-surface/70 rounded-lg transition-colors mt-0.5 sm:mt-1 touch-manipulation flex-shrink-0"
+            aria-label={t('common.back')}
           >
-            <ArrowBack className="text-muted" />
+            <ArrowBack className="text-muted w-5 h-5 sm:w-6 sm:h-6" />
           </button>
           
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <h1 className="text-xl lg:text-2xl font-display font-bold text-foreground truncate">
+            <div className="flex items-start justify-between gap-2 sm:gap-4">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-display font-bold text-foreground line-clamp-2 sm:truncate">
                   {paper.title || paper.fileName}
                 </h1>
                 
                 {paper.authors && paper.authors.length > 0 && (
-                  <div className="flex items-center gap-2 mt-2 text-muted">
-                    <Person className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm truncate">
+                  <div className="flex items-center gap-2 mt-1 sm:mt-2 text-muted">
+                    <Person className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm truncate">
                       {paper.authors.join(', ')}
                     </span>
                   </div>
                 )}
                 
-                <div className="flex items-center gap-4 mt-2 text-sm text-muted flex-wrap">
+                <div className="flex items-center gap-2 sm:gap-4 mt-1 sm:mt-2 text-xs sm:text-sm text-muted flex-wrap">
                   <span className="flex items-center gap-1">
-                    <CalendarToday className="w-4 h-4" />
+                    <CalendarToday className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     {formatDate(paper.createdAt)}
                   </span>
                   {paper.pageCount && (
                     <span className="flex items-center gap-1">
-                      <Description className="w-4 h-4" />
+                      <Description className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       {t('analysis.pages', { count: paper.pageCount })}
                     </span>
                   )}
@@ -247,8 +248,8 @@ export function AnalysisPage() {
                 </div>
               </div>
 
-              {/* Status */}
-              <div className="flex-shrink-0">
+              {/* Status - Hidden on very small screens */}
+              <div className="flex-shrink-0 hidden xs:block">
                 {isReady && (
                   <Chip
                     icon={<CheckCircle className="w-4 h-4" />}
@@ -339,7 +340,7 @@ export function AnalysisPage() {
 
       {/* Main Content - Scrollable */}
       {isReady && (
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
           {/* Left Panel - Insights/Sections (Full width on mobile, half on desktop) */}
           <div className="card flex flex-col min-h-0 overflow-hidden">
             <Tabs
@@ -348,6 +349,13 @@ export function AnalysisPage() {
               className="border-b border-border/50 flex-shrink-0"
               variant="scrollable"
               scrollButtons="auto"
+              sx={{
+                '& .MuiTab-root': {
+                  minWidth: 'auto',
+                  padding: { xs: '8px 12px', sm: '12px 16px' },
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                },
+              }}
             >
               <Tab label={t('analysis.tabs.insights')} />
               <Tab 

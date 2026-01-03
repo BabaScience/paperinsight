@@ -75,14 +75,14 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Theme & Language Toggle */}
       <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
         <LanguageSwitcherSimple />
         <ThemeToggleSimple />
       </div>
 
-      {/* Left side - Visual */}
+      {/* Left side - Visual (hidden on mobile) */}
       <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-accent-teal/20 via-primary-600/10 to-accent-gold/10" />
         <div className="absolute inset-0 bg-gradient-mesh opacity-30" />
@@ -112,7 +112,7 @@ export function RegisterPage() {
       </div>
 
       {/* Right side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 pt-16 sm:pt-20 lg:pt-8">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -120,22 +120,22 @@ export function RegisterPage() {
           className="w-full max-w-md"
         >
           {/* Logo */}
-          <div className="flex items-center gap-3 mb-8">
+          <div className="flex items-center gap-3 mb-6 sm:mb-8">
             <img 
               src={resolvedMode === 'dark' ? '/lunai-logo-dark.svg' : '/lunai-logo-light.svg'} 
               alt="LUNAI" 
-              className="h-12 w-auto"
+              className="h-10 sm:h-12 w-auto"
             />
           </div>
 
-          <h1 className="text-3xl font-display font-bold text-theme-primary mb-2">
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-theme-primary mb-2">
             {t('auth.createAccount')}
           </h1>
-          <p className="text-theme-muted mb-8">
+          <p className="text-theme-muted mb-6 sm:mb-8 text-sm sm:text-base">
             {t('auth.getStarted')}
           </p>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-5">
             {/* Name */}
             <div>
               <label className="block text-sm font-medium text-theme-secondary mb-2">

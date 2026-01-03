@@ -137,13 +137,13 @@ export function UploadPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-display font-bold text-theme-primary">
+        <h1 className="text-2xl sm:text-3xl font-display font-bold text-theme-primary">
           {t('upload.title')}
         </h1>
-        <p className="text-theme-muted mt-1">
+        <p className="text-theme-muted mt-1 text-sm sm:text-base">
           {t('upload.subtitle')}
         </p>
       </div>
@@ -156,11 +156,11 @@ export function UploadPage() {
       >
         <div
           {...getRootProps()}
-          className={`relative border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300
+          className={`relative border-2 border-dashed rounded-2xl p-6 sm:p-8 md:p-12 text-center cursor-pointer transition-all duration-300 touch-manipulation
             ${
               isDragActive
                 ? 'border-primary-500 bg-primary-500/10'
-                : 'border-theme-border hover:border-primary-500/50 hover:bg-theme-surface-hover/50'
+                : 'border-theme-border hover:border-primary-500/50 hover:bg-theme-surface-hover/50 active:bg-theme-surface-hover/50'
             }`}
         >
           <input {...getInputProps()} />
@@ -168,27 +168,27 @@ export function UploadPage() {
           <motion.div
             animate={{ scale: isDragActive ? 1.1 : 1 }}
             transition={{ duration: 0.2 }}
-            className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary-500/20 to-accent-violet/20 flex items-center justify-center"
+            className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 rounded-2xl bg-gradient-to-br from-primary-500/20 to-accent-violet/20 flex items-center justify-center"
           >
             <CloudUpload
-              className={`text-4xl ${isDragActive ? 'text-primary-400' : 'text-theme-muted'}`}
+              className={`text-3xl sm:text-4xl ${isDragActive ? 'text-primary-400' : 'text-theme-muted'}`}
             />
           </motion.div>
 
-          <h3 className="text-xl font-semibold text-theme-primary mb-2">
+          <h3 className="text-lg sm:text-xl font-semibold text-theme-primary mb-2">
             {isDragActive ? t('upload.dropzoneActive') : t('upload.dropzone')}
           </h3>
-          <p className="text-theme-muted mb-4">
+          <p className="text-theme-muted mb-3 sm:mb-4 text-sm sm:text-base">
             {t('upload.browse')}
           </p>
-          <p className="text-sm text-theme-muted">
+          <p className="text-xs sm:text-sm text-theme-muted">
             {t('upload.supportsPdf')}
           </p>
 
           {/* Decorative background */}
           <div className="absolute inset-0 -z-10 overflow-hidden rounded-2xl">
-            <div className="absolute top-0 left-1/4 w-64 h-64 bg-primary-500/5 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-accent-violet/5 rounded-full blur-3xl" />
+            <div className="absolute top-0 left-1/4 w-32 sm:w-64 h-32 sm:h-64 bg-primary-500/5 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 right-1/4 w-32 sm:w-64 h-32 sm:h-64 bg-accent-violet/5 rounded-full blur-3xl" />
           </div>
         </div>
       </motion.div>
@@ -200,9 +200,9 @@ export function UploadPage() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="space-y-4"
+            className="space-y-3 sm:space-y-4"
           >
-            <h3 className="text-lg font-semibold text-theme-primary">
+            <h3 className="text-base sm:text-lg font-semibold text-theme-primary">
               {t('upload.uploadedPapers')}
             </h3>
             
@@ -214,23 +214,36 @@ export function UploadPage() {
                 exit={{ opacity: 0, x: 20 }}
                 className="card"
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500/20 to-accent-violet/20 flex items-center justify-center flex-shrink-0">
-                    <Description className="text-primary-400" />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-theme-primary truncate">
-                      {uploadedFile.file.name}
-                    </p>
-                    <p className="text-sm text-theme-muted">
-                      {(uploadedFile.file.size / (1024 * 1024)).toFixed(2)} MB
-                    </p>
+                {/* Mobile-optimized file card */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary-500/20 to-accent-violet/20 flex items-center justify-center flex-shrink-0">
+                      <Description className="text-primary-400 text-lg sm:text-xl" />
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-theme-primary truncate text-sm sm:text-base">
+                        {uploadedFile.file.name}
+                      </p>
+                      <p className="text-xs sm:text-sm text-theme-muted">
+                        {(uploadedFile.file.size / (1024 * 1024)).toFixed(2)} MB
+                      </p>
+                    </div>
+                    
+                    {/* Close button for mobile */}
+                    <button
+                      onClick={() => removeFile(uploadedFile.file)}
+                      className="sm:hidden p-2 hover:bg-theme-surface-hover rounded-lg transition-colors touch-manipulation"
+                      aria-label={t('common.close')}
+                    >
+                      <Close className="w-5 h-5 text-theme-muted" />
+                    </button>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  {/* Status section */}
+                  <div className="flex items-center justify-between sm:justify-end gap-3">
                     {uploadedFile.status === 'uploading' && (
-                      <div className="w-32">
+                      <div className="flex-1 sm:w-32">
                         <LinearProgress
                           variant="determinate"
                           value={uploadedFile.progress}
@@ -244,30 +257,31 @@ export function UploadPage() {
 
                     {uploadedFile.status === 'processing' && (
                       <div className="flex items-center gap-2 text-primary-400">
-                        <CircularProgress size={20} color="inherit" />
-                        <span className="text-sm">{uploadedFile.message}</span>
+                        <CircularProgress size={18} color="inherit" />
+                        <span className="text-xs sm:text-sm truncate max-w-[150px] sm:max-w-none">{uploadedFile.message}</span>
                       </div>
                     )}
 
                     {uploadedFile.status === 'ready' && (
                       <button
                         onClick={() => uploadedFile.paperId && viewPaper(uploadedFile.paperId)}
-                        className="flex items-center gap-2 px-4 py-2 bg-accent-mint/10 text-accent-mint rounded-lg hover:bg-accent-mint/20 transition-colors"
+                        className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-accent-mint/10 text-accent-mint rounded-lg hover:bg-accent-mint/20 transition-colors touch-manipulation"
                       >
-                        <CheckCircle className="w-5 h-5" />
-                        <span className="text-sm font-medium">{t('common.view')}</span>
+                        <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="text-xs sm:text-sm font-medium">{t('common.view')}</span>
                       </button>
                     )}
 
                     {uploadedFile.status === 'error' && (
-                      <span className="text-sm text-accent-coral">
+                      <span className="text-xs sm:text-sm text-accent-coral truncate max-w-[200px]">
                         {uploadedFile.message}
                       </span>
                     )}
 
+                    {/* Close button for desktop */}
                     <button
                       onClick={() => removeFile(uploadedFile.file)}
-                      className="p-2 hover:bg-theme-surface-hover rounded-lg transition-colors"
+                      className="hidden sm:block p-2 hover:bg-theme-surface-hover rounded-lg transition-colors"
                     >
                       <Close className="w-5 h-5 text-theme-muted" />
                     </button>
@@ -281,15 +295,15 @@ export function UploadPage() {
 
       {/* Tips */}
       <div className="card bg-primary-500/5 border-primary-500/20">
-        <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-lg bg-primary-500/20 flex items-center justify-center flex-shrink-0">
-            <AutoAwesome className="text-primary-400" />
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-primary-500/20 flex items-center justify-center flex-shrink-0">
+            <AutoAwesome className="text-primary-400 text-lg sm:text-xl" />
           </div>
           <div>
-            <h4 className="font-semibold text-theme-primary mb-2">
+            <h4 className="font-semibold text-theme-primary mb-2 text-sm sm:text-base">
               {t('upload.tips')}
             </h4>
-            <ul className="text-sm text-theme-muted space-y-1.5">
+            <ul className="text-xs sm:text-sm text-theme-muted space-y-1 sm:space-y-1.5">
               <li>• {t('upload.tip1')}</li>
               <li>• {t('upload.tip2')}</li>
               <li>• {t('upload.tip3')}</li>
