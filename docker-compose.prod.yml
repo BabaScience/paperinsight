@@ -35,8 +35,8 @@ services:
       context: ./client
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:-https://api.yourdomain.com}
-        VITE_WS_URL: ${VITE_WS_URL:-wss://api.yourdomain.com}
+        VITE_API_URL: https://api.${DOMAIN}
+        VITE_WS_URL: wss://api.${DOMAIN}
     container_name: lunai-client
     restart: unless-stopped
     networks:
@@ -74,6 +74,7 @@ services:
       - JWT_ACCESS_EXPIRY=${JWT_ACCESS_EXPIRY:-15m}
       - JWT_REFRESH_EXPIRY=${JWT_REFRESH_EXPIRY:-7d}
       - MAX_FILE_SIZE=${MAX_FILE_SIZE:-52428800}
+      - CORS_ORIGINS=https://${DOMAIN},https://www.${DOMAIN},https://api.${DOMAIN}
     volumes:
       - server_uploads:/app/uploads
     depends_on:
