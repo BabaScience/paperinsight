@@ -244,6 +244,35 @@ export function ProfilePage() {
     setShowFieldSuggestions(false);
   };
 
+  const handleDiscard = () => {
+    if (profile) {
+      setFormData({
+        researchField: profile.researchField || '',
+        expertiseLevel: profile.expertiseLevel,
+        interests: profile.interests || [],
+        currentProjects: profile.currentProjects || '',
+        preferredStyle: profile.preferredStyle,
+        preferredLanguage: profile.preferredLanguage,
+        preferredModel: profile.preferredModel,
+        tokenLimit: profile.tokenLimit || 2000,
+        bio: profile.bio || '',
+      });
+    } else {
+      setFormData({
+        researchField: '',
+        expertiseLevel: undefined,
+        interests: [],
+        currentProjects: '',
+        preferredStyle: undefined,
+        preferredLanguage: undefined,
+        preferredModel: undefined,
+        tokenLimit: 2000,
+        bio: '',
+      });
+    }
+    setHasChanges(false);
+  };
+
   if (isLoading && !profile) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -256,7 +285,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
+    <div className={`max-w-4xl mx-auto space-y-6 sm:space-y-8 ${hasChanges ? 'pb-24' : ''}`}>
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -287,23 +316,6 @@ export function ProfilePage() {
               {t('profile.unsavedChanges')}
             </motion.span>
           )}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <motion.button
-              onClick={handleSave}
-              disabled={isSaving || !hasChanges}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="btn-primary flex items-center gap-2 disabled:opacity-50 text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
-            >
-              {isSaving ? (
-                <CircularProgress size={18} color="inherit" />
-              ) : (
-                <Save className="w-4 h-4 sm:w-5 sm:h-5" />
-              )}
-              <span className="hidden xs:inline">{t('profile.saveProfile')}</span>
-              <span className="xs:hidden">{t('common.save')}</span>
-            </motion.button>
-          </div>
         </div>
       </motion.div>
 
@@ -1009,6 +1021,67 @@ export function ProfilePage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Floating Save Alert */}
+      <AnimatePresence>
+        {hasChanges && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed bottom-0 inset-x-0 z-50 p-4 pb-safe"
+          >
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-surface/95 backdrop-blur-xl border border-border shadow-2xl shadow-black/20 rounded-2xl p-3 sm:p-4">
+                <div className="flex items-center justify-between gap-3 sm:gap-4">
+                  {/* Left side - message */}
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-accent-gold to-accent-coral flex items-center justify-center flex-shrink-0">
+                      <Warning className="text-white text-sm sm:text-base" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground text-sm sm:text-base truncate">
+                        {t('profile.unsavedChanges')}
+                      </p>
+                      <p className="text-xs sm:text-sm text-muted hidden xs:block">
+                        {t('profile.unsavedChangesHint')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right side - buttons */}
+                  <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                    <motion.button
+                      onClick={handleDiscard}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="px-3 sm:px-4 py-2 sm:py-2.5 text-muted hover:text-foreground hover:bg-surface-hover rounded-xl transition-colors text-sm sm:text-base font-medium"
+                    >
+                      {t('common.discard')}
+                    </motion.button>
+                    <motion.button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="btn-primary flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base"
+                    >
+                      {isSaving ? (
+                        <CircularProgress size={18} color="inherit" />
+                      ) : (
+                        <Save className="w-4 h-4 sm:w-5 sm:h-5" />
+                      )}
+                      <span className="hidden xs:inline">{t('profile.saveChanges')}</span>
+                      <span className="xs:hidden">{t('common.save')}</span>
+                    </motion.button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

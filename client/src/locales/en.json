@@ -2,6 +2,7 @@
   "common": {
     "save": "Save",
     "cancel": "Cancel",
+    "discard": "Discard",
     "back": "Go back",
     "loading": "Loading...",
     "error": "Error",
@@ -130,6 +131,8 @@
     "subtitle": "Personalize how AI responds to your questions",
     "loadingProfile": "Loading your profile...",
     "unsavedChanges": "Unsaved changes",
+    "unsavedChangesHint": "Don't forget to save your profile",
+    "saveChanges": "Save Changes",
     "resetToDefaults": "Reset to defaults",
     "saveProfile": "Save Profile",
     "saveSuccess": "Profile saved successfully! AI responses will now be personalized.",

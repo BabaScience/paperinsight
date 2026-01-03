@@ -2,6 +2,7 @@
   "common": {
     "save": "Enregistrer",
     "cancel": "Annuler",
+    "discard": "Annuler",
     "back": "Retour",
     "loading": "Chargement...",
     "error": "Erreur",
@@ -130,6 +131,8 @@
     "subtitle": "Personnalisez la façon dont l'IA répond à vos questions",
     "loadingProfile": "Chargement de votre profil...",
     "unsavedChanges": "Modifications non enregistrées",
+    "unsavedChangesHint": "N'oubliez pas de sauvegarder votre profil",
+    "saveChanges": "Sauvegarder",
     "resetToDefaults": "Réinitialiser par défaut",
     "saveProfile": "Enregistrer le profil",
     "saveSuccess": "Profil enregistré avec succès ! Les réponses de l'IA seront désormais personnalisées.",
