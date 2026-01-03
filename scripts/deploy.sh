@@ -55,6 +55,7 @@ required_vars=(
     "OPENAI_API_KEY"
     "MINIO_ACCESS_KEY"
     "MINIO_SECRET_KEY"
+    "ADMIN_EMAIL"
 )
 
 for var in "${required_vars[@]}"; do
@@ -70,79 +71,76 @@ log_info "Starting LUNAI deployment..."
 log_info "Creating directories..."
 mkdir -p certbot/www certbot/conf nginx/conf.d
 
-# Update nginx config with actual domain
-log_info "Configuring nginx with domain: $DOMAIN"
-sed -i "s/yourdomain.com/$DOMAIN/g" nginx/conf.d/app.conf
+# Restore nginx config from git if missing
+if [ ! -f "nginx/conf.d/app.conf" ]; then
+    log_info "Restoring nginx config..."
+    git checkout HEAD -- nginx/conf.d/app.conf 2>/dev/null || true
+fi
 
-# Function to get initial SSL certificates
-get_ssl_certs() {
-    log_info "Obtaining SSL certificates for $DOMAIN..."
-    
-    # Start nginx temporarily for ACME challenge
-    docker-compose -f docker-compose.prod.yml up -d nginx
-    
-    # Get certificates
-    docker-compose -f docker-compose.prod.yml run --rm certbot certonly \
-        --webroot \
-        --webroot-path=/var/www/certbot \
-        --email $ADMIN_EMAIL \
-        --agree-tos \
-        --no-eff-email \
-        -d $DOMAIN \
-        -d www.$DOMAIN \
-        -d api.$DOMAIN
-    
-    # Stop nginx
-    docker-compose -f docker-compose.prod.yml down
-}
+# Update nginx config with actual domain (only if not already done)
+if grep -q "yourdomain.com" nginx/conf.d/app.conf 2>/dev/null; then
+    log_info "Configuring nginx with domain: $DOMAIN"
+    sed -i "s/yourdomain.com/$DOMAIN/g" nginx/conf.d/app.conf
+fi
 
 # Check if SSL certificates exist
 if [ ! -d "certbot/conf/live/$DOMAIN" ]; then
     log_warn "SSL certificates not found. Obtaining new certificates..."
     
-    # Create temporary nginx config for ACME challenge
-    cat > nginx/conf.d/temp.conf << 'EOF'
-server {
-    listen 80;
-    server_name _;
+    # Stop any running services that might use port 80
+    log_info "Stopping any services on port 80..."
+    docker-compose -f docker-compose.prod.yml down 2>/dev/null || true
     
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
+    # Make sure port 80 is free
+    fuser -k 80/tcp 2>/dev/null || true
+    sleep 2
     
-    location / {
-        return 200 'OK';
-        add_header Content-Type text/plain;
-    }
-}
-EOF
+    # Get certificates using standalone mode (no nginx needed)
+    log_info "Obtaining SSL certificates for $DOMAIN using standalone mode..."
+    docker run --rm \
+        -p 80:80 \
+        -v "$(pwd)/certbot/conf:/etc/letsencrypt" \
+        -v "$(pwd)/certbot/www:/var/www/certbot" \
+        certbot/certbot certonly \
+        --standalone \
+        --email $ADMIN_EMAIL \
+        --agree-tos \
+        --no-eff-email \
+        --non-interactive \
+        -d $DOMAIN \
+        -d www.$DOMAIN \
+        -d api.$DOMAIN
     
-    # Remove the main config temporarily
-    mv nginx/conf.d/app.conf nginx/conf.d/app.conf.bak
-    
-    get_ssl_certs
-    
-    # Restore main config
-    rm nginx/conf.d/temp.conf
-    mv nginx/conf.d/app.conf.bak nginx/conf.d/app.conf
+    if [ $? -eq 0 ]; then
+        log_info "✅ SSL certificates obtained successfully!"
+    else
+        log_error "Failed to obtain SSL certificates. Please check:"
+        log_error "  1. DNS records point to this server"
+        log_error "  2. Port 80 is accessible from the internet"
+        log_error "  3. Domain names are correct"
+        exit 1
+    fi
+else
+    log_info "SSL certificates found for $DOMAIN"
 fi
 
 # Build and start all services
 log_info "Building Docker images..."
-docker-compose -f docker-compose.prod.yml build --no-cache
+docker-compose -f docker-compose.prod.yml build
 
 log_info "Starting services..."
 docker-compose -f docker-compose.prod.yml up -d
 
 # Wait for services to be ready
 log_info "Waiting for services to start..."
-sleep 10
+sleep 15
 
 # Check service health
 log_info "Checking service health..."
 services=(mongodb redis qdrant minio server client nginx)
 for service in "${services[@]}"; do
-    if docker-compose -f docker-compose.prod.yml ps | grep -q "${service}.*Up"; then
+    container_name="lunai-${service}"
+    if docker ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
         log_info "✅ $service is running"
     else
         log_warn "⚠️  $service may not be running correctly"
@@ -163,4 +161,3 @@ echo "To view logs:     docker-compose -f docker-compose.prod.yml logs -f"
 echo "To stop:          docker-compose -f docker-compose.prod.yml down"
 echo "To restart:       docker-compose -f docker-compose.prod.yml restart"
 echo ""
-
