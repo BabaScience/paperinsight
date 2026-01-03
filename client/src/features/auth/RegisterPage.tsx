@@ -122,10 +122,14 @@ export function RegisterPage() {
           {/* Logo */}
           <div className="flex items-center gap-3 mb-6 sm:mb-8">
             <img 
-              src={resolvedMode === 'dark' ? '/lunai-logo-dark.svg' : '/lunai-logo-light.svg'} 
+              src={resolvedMode === 'dark' ? '/lunai-icon-dark.svg' : '/lunai-icon-light.svg'} 
               alt="LUNAI" 
               className="h-10 sm:h-12 w-auto"
             />
+            <span>
+              <span className="font-bold text-2xl sm:text-3xl tracking-tight text-blue-600 dark:text-blue-500">LUNA</span>
+              <span className="font-bold text-2xl sm:text-3xl text-blue-600 dark:text-blue-500">i</span>
+            </span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-theme-primary mb-2">

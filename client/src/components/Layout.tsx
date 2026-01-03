@@ -108,9 +108,10 @@ export function Layout() {
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="font-display font-bold text-xl text-primary-400 whitespace-nowrap"
+              className="whitespace-nowrap"
             >
-              LUNAI
+              <span className="font-bold text-xl tracking-tight text-blue-600 dark:text-blue-500">LUNA</span>
+              <span className="font-bold text-xl text-blue-600 dark:text-blue-500">i</span>
             </motion.span>
           )}
         </div>
@@ -293,8 +294,9 @@ export function Layout() {
             alt="LUNAI" 
             className="w-8 h-8"
           />
-          <span className="font-display font-bold text-lg text-primary-400">
-            LUNAI
+          <span>
+            <span className="font-bold text-lg tracking-tight text-blue-600 dark:text-blue-500">LUNA</span>
+            <span className="font-bold text-lg text-blue-600 dark:text-blue-500">i</span>
           </span>
         </div>
 

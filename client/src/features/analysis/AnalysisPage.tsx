@@ -567,7 +567,10 @@ export function AnalysisPage() {
                     <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-accent-mint rounded-full border-2 border-background" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">LUNAI</h3>
+                    <h3 className="font-semibold text-foreground">
+                      <span className="text-blue-600 dark:text-blue-500">LUNA</span>
+                      <span className="text-blue-600 dark:text-blue-500">i</span>
+                    </h3>
                     <p className="text-xs text-accent-mint flex items-center gap-1">
                       <span className="w-1.5 h-1.5 bg-accent-mint rounded-full animate-pulse" />
                       Online • RAG + GPT-4o
