@@ -10,6 +10,10 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') }); // server/.en
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') }); // root/.env
 dotenv.config(); // current directory
 
+// Get NODE_ENV early for conditional validation
+const nodeEnv = process.env.NODE_ENV || 'development';
+const isProduction = nodeEnv === 'production';
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().transform(Number).default('3001'),
@@ -50,9 +54,27 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   ADMIN_EMAIL: z.string().email().optional(),
   
-  // JWT
-  JWT_SECRET: z.string(),
-  JWT_REFRESH_SECRET: z.string(),
+  // JWT - Enforce strong secrets in production
+  JWT_SECRET: z.string()
+    .min(isProduction ? 64 : 1, 
+      isProduction 
+        ? 'JWT_SECRET must be at least 64 characters in production for security' 
+        : 'JWT_SECRET is required'
+    )
+    .refine(
+      (val) => !isProduction || !/^(secret|password|test|dev)/i.test(val),
+      { message: 'JWT_SECRET appears to be a weak/default value. Use a cryptographically random string in production.' }
+    ),
+  JWT_REFRESH_SECRET: z.string()
+    .min(isProduction ? 64 : 1,
+      isProduction
+        ? 'JWT_REFRESH_SECRET must be at least 64 characters in production for security'
+        : 'JWT_REFRESH_SECRET is required'
+    )
+    .refine(
+      (val) => !isProduction || !/^(secret|password|test|dev)/i.test(val),
+      { message: 'JWT_REFRESH_SECRET appears to be a weak/default value. Use a cryptographically random string in production.' }
+    ),
   JWT_ACCESS_EXPIRY: z.string().default('15m'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
   
@@ -60,7 +82,11 @@ const envSchema = z.object({
   MAX_FILE_SIZE: z.string().transform(Number).default('52428800'),
   
   // CORS (comma-separated origins for production)
-  CORS_ORIGINS: z.string().optional(),
+  // In production, don't allow wildcard CORS
+  CORS_ORIGINS: z.string().optional().refine(
+    (val) => !isProduction || (val && val !== '*' && !val.includes('*')),
+    { message: 'CORS_ORIGINS must be explicitly defined in production (no wildcards)' }
+  ),
 });
 
 const parsed = envSchema.safeParse(process.env);

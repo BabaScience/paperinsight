@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { UnauthorizedError } from '../utils/errors.js';
+import { tokenBlacklistService } from '../services/token-blacklist.service.js';
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -10,13 +11,14 @@ export interface AuthRequest extends Request {
 interface JwtPayload {
   userId: string;
   type: 'access' | 'refresh';
+  iat?: number;
 }
 
-export function authenticate(
+export async function authenticate(
   req: AuthRequest,
   _res: Response,
   next: NextFunction
-): void {
+): Promise<void> {
   try {
     const authHeader = req.headers.authorization;
     
@@ -34,6 +36,23 @@ export function authenticate(
     
     if (decoded.type !== 'access') {
       throw new UnauthorizedError('Invalid token type');
+    }
+
+    // Check if token is blacklisted (individual token revocation)
+    const isRevoked = await tokenBlacklistService.isRevoked(token);
+    if (isRevoked) {
+      throw new UnauthorizedError('Token has been revoked');
+    }
+
+    // Check if all user tokens were revoked before this token was issued
+    if (decoded.iat) {
+      const isUserRevoked = await tokenBlacklistService.isUserTokenRevokedBefore(
+        decoded.userId,
+        decoded.iat
+      );
+      if (isUserRevoked) {
+        throw new UnauthorizedError('Session has been invalidated. Please log in again.');
+      }
     }
     
     req.userId = decoded.userId;

@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
 import { createServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 import { env } from './config/env.js';
@@ -8,6 +10,7 @@ import { redis } from './config/redis.js';
 import { initializeQdrantCollection } from './config/qdrant.js';
 import { initializeMinio } from './config/minio.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { authRateLimiter, apiRateLimiter } from './middleware/rate-limit.js';
 import { authRouter } from './routes/auth.routes.js';
 import { paperRouter } from './routes/paper.routes.js';
 import { profileRouter } from './routes/profile.routes.js';
@@ -31,23 +34,65 @@ const io = new SocketServer(httpServer, {
   },
 });
 
-// Middleware
+// Security Headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'", 'https://api.openai.com', 'https://api.deepseek.com'],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+  referrerPolicy: {
+    policy: 'strict-origin-when-cross-origin',
+  },
+  noSniff: true,
+  xssFilter: true,
+  hidePoweredBy: true,
+}));
+
+// CORS
 app.use(cors({
   origin: corsOrigins,
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['X-Total-Count', 'RateLimit-Limit', 'RateLimit-Remaining', 'RateLimit-Reset'],
+  maxAge: 86400, // 24 hours
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Body parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// NoSQL Injection Protection
+app.use(mongoSanitize({
+  replaceWith: '_',
+  onSanitize: ({ req, key }) => {
+    console.warn(`🛡️ Sanitized potentially malicious field: ${key} from ${req.ip}`);
+  },
+}));
 
 // Health check
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// API Routes
-app.use('/api/auth', authRouter);
-app.use('/api/papers', paperRouter);
-app.use('/api/profile', profileRouter);
+// API Routes with Rate Limiting
+app.use('/api/auth', authRateLimiter, authRouter);
+app.use('/api/papers', apiRateLimiter, paperRouter);
+app.use('/api/profile', apiRateLimiter, profileRouter);
 
 // Error handling
 app.use(notFoundHandler);

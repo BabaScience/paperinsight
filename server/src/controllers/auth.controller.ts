@@ -1,5 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 import { User } from '../models/user.model.js';
+import { env } from '../config/env.js';
 import { 
   generateTokens, 
   verifyRefreshToken,
@@ -10,6 +12,7 @@ import {
   UnauthorizedError,
   ConflictError 
 } from '../utils/errors.js';
+import { tokenBlacklistService } from '../services/token-blacklist.service.js';
 
 class AuthController {
   async register(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -131,6 +134,61 @@ class AuthController {
             createdAt: user.createdAt,
           },
         },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async logout(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const authHeader = req.headers.authorization;
+      const token = authHeader?.split(' ')[1];
+
+      if (token) {
+        // Decode token to get expiry time
+        const decoded = jwt.decode(token) as { exp?: number } | null;
+        if (decoded?.exp) {
+          // Calculate remaining time until token expires
+          const expiresIn = decoded.exp - Math.floor(Date.now() / 1000);
+          if (expiresIn > 0) {
+            // Add token to blacklist
+            await tokenBlacklistService.revokeToken(token, expiresIn);
+          }
+        }
+      }
+
+      res.json({
+        status: 'success',
+        message: 'Logged out successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async logoutAll(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      if (!req.userId) {
+        throw new UnauthorizedError('Not authenticated');
+      }
+
+      // Revoke all tokens for this user
+      // Use 7 days (refresh token lifetime) as the revocation period
+      const sevenDaysInSeconds = 7 * 24 * 60 * 60;
+      await tokenBlacklistService.revokeAllUserTokens(req.userId, sevenDaysInSeconds);
+
+      res.json({
+        status: 'success',
+        message: 'Logged out from all devices successfully',
       });
     } catch (error) {
       next(error);

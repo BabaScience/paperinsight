@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { z, ZodSchema } from 'zod';
-import { ValidationError } from '../utils/errors.js';
+import mongoose from 'mongoose';
+import { ValidationError, BadRequestError } from '../utils/errors.js';
 
 export function validate(schema: ZodSchema) {
   return (req: Request, _res: Response, next: NextFunction): void => {
@@ -23,6 +24,43 @@ export function validate(schema: ZodSchema) {
     }
   };
 }
+
+/**
+ * Validates that a URL parameter is a valid MongoDB ObjectId
+ * Prevents NoSQL injection attacks via malformed IDs
+ */
+export function validateObjectId(paramName: string = 'id') {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    const id = req.params[paramName];
+    
+    if (!id) {
+      next(new BadRequestError(`${paramName} parameter is required`));
+      return;
+    }
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      next(new BadRequestError(`Invalid ${paramName} format`));
+      return;
+    }
+    
+    // Additional check: ensure it's a valid hex string of correct length
+    // ObjectId.isValid() can return true for some non-ObjectId strings
+    if (!/^[a-fA-F0-9]{24}$/.test(id)) {
+      next(new BadRequestError(`Invalid ${paramName} format`));
+      return;
+    }
+    
+    next();
+  };
+}
+
+/**
+ * Custom Zod refinement for MongoDB ObjectId validation
+ */
+export const mongoIdSchema = z.string().refine(
+  (val) => mongoose.Types.ObjectId.isValid(val) && /^[a-fA-F0-9]{24}$/.test(val),
+  { message: 'Invalid MongoDB ObjectId format' }
+);
 
 // Common validation schemas
 export const authSchemas = {
@@ -54,13 +92,13 @@ export const paperSchemas = {
       question: z.string().min(1, 'Question is required').max(1000),
     }),
     params: z.object({
-      id: z.string().min(1, 'Paper ID is required'),
+      id: mongoIdSchema,
     }),
   }),
   
   getById: z.object({
     params: z.object({
-      id: z.string().min(1, 'Paper ID is required'),
+      id: mongoIdSchema,
     }),
   }),
 };

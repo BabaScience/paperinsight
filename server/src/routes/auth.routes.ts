@@ -29,6 +29,20 @@ authRouter.get(
   authController.getCurrentUser
 );
 
+// Logout current session
+authRouter.post(
+  '/logout',
+  authenticate,
+  authController.logout
+);
+
+// Logout from all devices
+authRouter.post(
+  '/logout-all',
+  authenticate,
+  authController.logoutAll
+);
+
 
 
 

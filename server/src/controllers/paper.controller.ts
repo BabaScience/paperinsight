@@ -8,8 +8,10 @@ import { ragService, TokenLimitExceededError } from '../services/rag.service.js'
 import { vectorService } from '../services/vector.service.js';
 import { minioService } from '../services/minio.service.js';
 import { redis } from '../config/redis.js';
+import { env } from '../config/env.js';
 import type { AuthRequest } from '../middleware/auth.js';
 import { BadRequestError, NotFoundError, ForbiddenError } from '../utils/errors.js';
+import { fileValidator } from '../middleware/file-validation.js';
 
 const pdfQueue = new Queue('pdf-processing', { connection: redis });
 
@@ -21,6 +23,20 @@ class PaperController {
       }
 
       const { originalname, size, buffer, mimetype } = req.file;
+
+      // Comprehensive PDF validation
+      const validation = await fileValidator.validatePDF(buffer, {
+        maxSize: env.MAX_FILE_SIZE,
+        allowedTypes: ['application/pdf'],
+        checkCompressionRatio: true,
+        maxCompressionRatio: 100,
+      });
+
+      if (!validation.valid) {
+        throw new BadRequestError(validation.reason || 'Invalid PDF file');
+      }
+
+      console.log(`✅ PDF validated: ${originalname} (hash: ${validation.fileHash?.substring(0, 16)}...)`);
 
       // Upload to MinIO
       const fileKey = await minioService.uploadFile(buffer, originalname, mimetype);
@@ -138,20 +154,30 @@ class PaperController {
         throw new ForbiddenError('Access denied');
       }
 
-      // Delete file from MinIO
-      await minioService.deleteFile(paper.fileUrl);
+      // Store file info before deletion for cleanup
+      const fileUrl = paper.fileUrl;
+      const paperId = paper._id.toString();
 
-      // Delete vectors from Qdrant
-      await vectorService.deleteByPaperId(paper._id.toString());
-
-      // Delete chunks
+      // Delete database records
+      // Note: In production with replica set, wrap these in a transaction
       await Chunk.deleteMany({ paperId: paper._id });
-
-      // Delete conversations
       await Conversation.deleteMany({ paperId: paper._id });
-
-      // Delete paper
       await paper.deleteOne();
+
+      // External service cleanup after DB operations succeed
+      // These can't be rolled back anyway, so we use Promise.allSettled
+      await Promise.allSettled([
+        minioService.deleteFile(fileUrl),
+        vectorService.deleteByPaperId(paperId),
+      ]).then((results) => {
+        // Log any failures for manual cleanup if needed
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            const service = index === 0 ? 'MinIO' : 'Qdrant';
+            console.error(`⚠️ Failed to delete from ${service}:`, result.reason);
+          }
+        });
+      });
 
       res.json({
         status: 'success',

@@ -1,3 +1,4 @@
+import { get_encoding, Tiktoken } from 'tiktoken';
 import { env } from '../config/env.js';
 import { embeddingService } from './embedding.service.js';
 import { vectorService } from './vector.service.js';
@@ -217,6 +218,13 @@ IMPORTANT: You MUST respond entirely in ${profile.preferredLanguage}. All explan
 }
 
 class RagService {
+  // Use cl100k_base encoding (used by GPT-4, GPT-3.5-turbo, text-embedding-ada-002)
+  private encoding: Tiktoken;
+
+  constructor() {
+    this.encoding = get_encoding('cl100k_base');
+  }
+
   /**
    * Check token limit and throw if exceeded
    */
@@ -232,11 +240,51 @@ class RagService {
   }
 
   /**
-   * Estimate tokens for a request (rough estimate: ~4 chars per token)
+   * Accurately count tokens using tiktoken
+   */
+  private countTokens(text: string): number {
+    return this.encoding.encode(text).length;
+  }
+
+  /**
+   * Count tokens for a chat message array
+   * Accounts for message structure overhead
+   */
+  private countMessagesTokens(messages: Array<{ role: string; content: string }>): number {
+    let tokenCount = 0;
+    
+    for (const message of messages) {
+      // Each message has overhead tokens
+      tokenCount += 4; // Every message has <|start|>, role, <|sep|>, content overhead
+      tokenCount += this.countTokens(message.content);
+      tokenCount += this.countTokens(message.role);
+    }
+    
+    tokenCount += 2; // Priming tokens for assistant response
+    
+    return tokenCount;
+  }
+
+  /**
+   * Estimate total tokens for a request including expected response
    */
   private estimateTokens(text: string, maxResponseTokens: number): number {
-    const inputTokens = Math.ceil(text.length / 4);
-    return inputTokens + maxResponseTokens;
+    const inputTokens = this.countTokens(text);
+    // Add a small buffer (10%) for response variance
+    const responseBuffer = Math.ceil(maxResponseTokens * 0.1);
+    return inputTokens + maxResponseTokens + responseBuffer;
+  }
+
+  /**
+   * Estimate tokens for messages plus expected response
+   */
+  private estimateMessagesTokens(
+    messages: Array<{ role: string; content: string }>,
+    maxResponseTokens: number
+  ): number {
+    const inputTokens = this.countMessagesTokens(messages);
+    const responseBuffer = Math.ceil(maxResponseTokens * 0.1);
+    return inputTokens + maxResponseTokens + responseBuffer;
   }
 
   async query(
@@ -312,26 +360,30 @@ Please provide a comprehensive answer based on the context above.`;
     const provider = userProfile?.preferredModel || env.DEFAULT_LLM_PROVIDER;
     const maxTokens = userProfile?.tokenLimit || env.DEFAULT_TOKEN_LIMIT;
 
-    // Check token limit if userId is provided
-    const estimatedTokens = this.estimateTokens(systemPrompt + userPrompt, maxTokens);
+    // Build messages for accurate token counting
+    const messages = [
+      { role: 'system' as const, content: systemPrompt },
+      { role: 'user' as const, content: userPrompt },
+    ];
+
+    // Check token limit if userId is provided (using accurate token counting)
+    const estimatedTokens = this.estimateMessagesTokens(messages, maxTokens);
     if (userId) {
       await this.checkTokenLimit(userId, estimatedTokens);
     }
 
     // Generate response using the user's preferred model
     const answer = await llmService.chat(provider, {
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
+      messages,
       temperature: 0.3,
       maxTokens,
     });
 
-    // Record token usage if userId is provided
+    // Record actual token usage if userId is provided
     if (userId && answer) {
-      const actualTokens = this.estimateTokens(systemPrompt + userPrompt + answer, 0);
-      await tokenService.recordUsage(userId, actualTokens);
+      const inputTokens = this.countMessagesTokens(messages);
+      const outputTokens = this.countTokens(answer);
+      await tokenService.recordUsage(userId, inputTokens + outputTokens);
     }
 
     return { answer: answer || 'Unable to generate response.', sources };
@@ -412,30 +464,36 @@ Please provide a comprehensive answer based on the context above.`;
       const provider = userProfile?.preferredModel || env.DEFAULT_LLM_PROVIDER;
       const maxTokens = userProfile?.tokenLimit || env.DEFAULT_TOKEN_LIMIT;
 
-      // Check token limit if userId is provided
-      const estimatedTokens = this.estimateTokens(systemPrompt + userPrompt, maxTokens);
+      // Build messages for accurate token counting
+      const messages = [
+        { role: 'system' as const, content: systemPrompt },
+        { role: 'user' as const, content: userPrompt },
+      ];
+
+      // Check token limit if userId is provided (using accurate token counting)
+      const estimatedTokens = this.estimateMessagesTokens(messages, maxTokens);
       if (userId) {
         await this.checkTokenLimit(userId, estimatedTokens);
       }
+
+      // Store input tokens for later usage calculation
+      const inputTokens = this.countMessagesTokens(messages);
 
       // Stream response using the user's preferred model
       await llmService.chatStream(
         provider,
         {
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
+          messages,
           temperature: 0.3,
           maxTokens,
         },
         {
           onToken: callbacks.onToken,
           onComplete: async (fullAnswer) => {
-            // Record token usage if userId is provided
+            // Record actual token usage if userId is provided
             if (userId) {
-              const actualTokens = this.estimateTokens(systemPrompt + userPrompt + fullAnswer, 0);
-              await tokenService.recordUsage(userId, actualTokens);
+              const outputTokens = this.countTokens(fullAnswer);
+              await tokenService.recordUsage(userId, inputTokens + outputTokens);
             }
             callbacks.onComplete({ answer: fullAnswer, sources });
           },
@@ -508,16 +566,17 @@ Format your response as JSON with keys: summary, keyInsights (array), methodolog
     const provider = userProfile?.preferredModel || env.DEFAULT_LLM_PROVIDER;
     const maxTokens = userProfile?.tokenLimit || env.DEFAULT_TOKEN_LIMIT;
 
-    // Check token limit if userId is provided
-    const estimatedTokens = this.estimateTokens(prompt, maxTokens);
+    // Build messages for accurate token counting
+    const messages = [{ role: 'user' as const, content: prompt }];
+
+    // Check token limit if userId is provided (using accurate token counting)
+    const estimatedTokens = this.estimateMessagesTokens(messages, maxTokens);
     if (userId) {
       await this.checkTokenLimit(userId, estimatedTokens);
     }
 
     const response = await llmService.chat(provider, {
-      messages: [
-        { role: 'user', content: prompt },
-      ],
+      messages,
       temperature: 0.3,
       maxTokens,
     });
@@ -526,10 +585,11 @@ Format your response as JSON with keys: summary, keyInsights (array), methodolog
       throw new Error('Failed to generate analysis');
     }
 
-    // Record token usage if userId is provided
+    // Record actual token usage if userId is provided
     if (userId) {
-      const actualTokens = this.estimateTokens(prompt + response, 0);
-      await tokenService.recordUsage(userId, actualTokens);
+      const inputTokens = this.countMessagesTokens(messages);
+      const outputTokens = this.countTokens(response);
+      await tokenService.recordUsage(userId, inputTokens + outputTokens);
     }
 
     const analysis = JSON.parse(cleanJsonResponse(response)) as {
@@ -675,16 +735,17 @@ Generate 2-3 diagrams that provide different perspectives on the paper's content
     const provider = userProfile?.preferredModel || env.DEFAULT_LLM_PROVIDER;
     const maxTokens = Math.max(userProfile?.tokenLimit || env.DEFAULT_TOKEN_LIMIT, 3000); // Need more tokens for diagrams
 
-    // Check token limit if userId is provided
-    const estimatedTokens = this.estimateTokens(prompt, maxTokens);
+    // Build messages for accurate token counting
+    const visualMessages = [{ role: 'user' as const, content: prompt }];
+
+    // Check token limit if userId is provided (using accurate token counting)
+    const estimatedTokens = this.estimateMessagesTokens(visualMessages, maxTokens);
     if (userId) {
       await this.checkTokenLimit(userId, estimatedTokens);
     }
 
     const response = await llmService.chat(provider, {
-      messages: [
-        { role: 'user', content: prompt },
-      ],
+      messages: visualMessages,
       temperature: 0.4,
       maxTokens,
     });
@@ -693,10 +754,11 @@ Generate 2-3 diagrams that provide different perspectives on the paper's content
       throw new Error('Failed to generate visuals');
     }
 
-    // Record token usage if userId is provided
+    // Record actual token usage if userId is provided
     if (userId) {
-      const actualTokens = this.estimateTokens(prompt + response, 0);
-      await tokenService.recordUsage(userId, actualTokens);
+      const inputTokens = this.countMessagesTokens(visualMessages);
+      const outputTokens = this.countTokens(response);
+      await tokenService.recordUsage(userId, inputTokens + outputTokens);
     }
 
     const parsed = JSON.parse(cleanJsonResponse(response)) as {
@@ -888,16 +950,17 @@ ${!userProfile || Object.keys(userProfile).length === 0
     const provider = userProfile?.preferredModel || env.DEFAULT_LLM_PROVIDER;
     const maxTokens = Math.max(userProfile?.tokenLimit || env.DEFAULT_TOKEN_LIMIT, 3000); // Need more tokens for ideas
 
-    // Check token limit if userId is provided
-    const estimatedTokens = this.estimateTokens(prompt, maxTokens);
+    // Build messages for accurate token counting
+    const ideasMessages = [{ role: 'user' as const, content: prompt }];
+
+    // Check token limit if userId is provided (using accurate token counting)
+    const estimatedTokens = this.estimateMessagesTokens(ideasMessages, maxTokens);
     if (userId) {
       await this.checkTokenLimit(userId, estimatedTokens);
     }
 
     const response = await llmService.chat(provider, {
-      messages: [
-        { role: 'user', content: prompt },
-      ],
+      messages: ideasMessages,
       temperature: 0.5,
       maxTokens,
     });
@@ -906,10 +969,11 @@ ${!userProfile || Object.keys(userProfile).length === 0
       throw new Error('Failed to generate ideas');
     }
 
-    // Record token usage if userId is provided
+    // Record actual token usage if userId is provided
     if (userId) {
-      const actualTokens = this.estimateTokens(prompt + response, 0);
-      await tokenService.recordUsage(userId, actualTokens);
+      const inputTokens = this.countMessagesTokens(ideasMessages);
+      const outputTokens = this.countTokens(response);
+      await tokenService.recordUsage(userId, inputTokens + outputTokens);
     }
 
     const parsed = JSON.parse(cleanJsonResponse(response)) as {
