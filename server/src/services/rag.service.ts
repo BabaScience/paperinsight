@@ -83,6 +83,53 @@ function cleanJsonResponse(response: string): string {
   return cleaned.trim();
 }
 
+/**
+ * Extract JSON from a response that may contain additional text
+ * Handles cases where LLM returns JSON wrapped in explanation text
+ */
+function extractJsonFromResponse(response: string): string {
+  const cleaned = cleanJsonResponse(response);
+  
+  // If it's already valid JSON, return it
+  try {
+    JSON.parse(cleaned);
+    return cleaned;
+  } catch {
+    // Try to find JSON object in the response
+  }
+  
+  // Look for JSON object pattern - find the first { and last }
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    const jsonCandidate = cleaned.slice(firstBrace, lastBrace + 1);
+    try {
+      JSON.parse(jsonCandidate);
+      return jsonCandidate;
+    } catch {
+      // Not valid JSON
+    }
+  }
+  
+  // Look for JSON array pattern - find the first [ and last ]
+  const firstBracket = cleaned.indexOf('[');
+  const lastBracket = cleaned.lastIndexOf(']');
+  
+  if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+    const jsonCandidate = cleaned.slice(firstBracket, lastBracket + 1);
+    try {
+      JSON.parse(jsonCandidate);
+      return jsonCandidate;
+    } catch {
+      // Not valid JSON
+    }
+  }
+  
+  // Return original cleaned response (will fail at parse, but with better error)
+  return cleaned;
+}
+
 const BASE_SYSTEM_PROMPT = `You are an expert research paper analyst. Your task is to answer questions about academic papers based on the provided context.
 
 Guidelines:
@@ -592,12 +639,25 @@ Format your response as JSON with keys: summary, keyInsights (array), methodolog
       await tokenService.recordUsage(userId, inputTokens + outputTokens);
     }
 
-    const analysis = JSON.parse(cleanJsonResponse(response)) as {
+    let analysis: {
       summary: string;
       keyInsights: string[];
       methodology?: string;
       limitations?: string;
     };
+
+    try {
+      analysis = JSON.parse(extractJsonFromResponse(response));
+    } catch (parseError) {
+      console.error('❌ Failed to parse analysis JSON response:', response.substring(0, 200));
+      // Return a fallback analysis when JSON parsing fails
+      analysis = {
+        summary: 'Analysis could not be fully parsed. The AI response was not in the expected format. Please try regenerating the analysis.',
+        keyInsights: ['Unable to extract key insights due to parsing error'],
+        methodology: 'Unable to determine',
+        limitations: 'Unable to determine',
+      };
+    }
 
     // Save the analysis to the paper document
     await Paper.findByIdAndUpdate(paperId, {
@@ -761,7 +821,7 @@ Generate 2-3 diagrams that provide different perspectives on the paper's content
       await tokenService.recordUsage(userId, inputTokens + outputTokens);
     }
 
-    const parsed = JSON.parse(cleanJsonResponse(response)) as {
+    let parsed: {
       diagrams: Array<{
         type: string;
         title: string;
@@ -769,6 +829,24 @@ Generate 2-3 diagrams that provide different perspectives on the paper's content
         code: string;
       }>;
     };
+
+    try {
+      parsed = JSON.parse(extractJsonFromResponse(response));
+    } catch (parseError) {
+      console.error('❌ Failed to parse visuals JSON response:', response.substring(0, 200));
+      // Return a fallback when JSON parsing fails
+      const fallbackDiagrams: IMermaidDiagram[] = [{
+        type: 'flowchart' as MermaidDiagramType,
+        title: 'Visuals Unavailable',
+        description: 'The AI response could not be parsed. Please try regenerating the visuals.',
+        code: 'flowchart TD\n  A[Error] --> B[Please regenerate]',
+      }];
+      
+      return {
+        diagrams: fallbackDiagrams,
+        cached: false,
+      };
+    }
 
     // Validate and clean diagrams
     const diagrams: IMermaidDiagram[] = parsed.diagrams.map(d => ({
@@ -976,7 +1054,7 @@ ${!userProfile || Object.keys(userProfile).length === 0
       await tokenService.recordUsage(userId, inputTokens + outputTokens);
     }
 
-    const parsed = JSON.parse(cleanJsonResponse(response)) as {
+    let parsed: {
       ideas: Array<{
         title: string;
         description: string;
@@ -987,6 +1065,28 @@ ${!userProfile || Object.keys(userProfile).length === 0
         relatedConcepts?: string[];
       }>;
     };
+
+    try {
+      parsed = JSON.parse(extractJsonFromResponse(response));
+    } catch (parseError) {
+      console.error('❌ Failed to parse ideas JSON response:', response.substring(0, 200));
+      // Return a fallback response when JSON parsing fails
+      const fallbackIdeas: IImplementationIdea[] = [{
+        title: 'Implementation Ideas Unavailable',
+        description: 'The AI response could not be parsed. Please try regenerating the ideas.',
+        difficulty: 'beginner',
+        relevance: 'Unable to determine relevance due to parsing error.',
+        steps: ['Click the regenerate button to try again'],
+        tools: [],
+        relatedConcepts: [],
+      }];
+      
+      return {
+        ideas: fallbackIdeas,
+        userContext: currentUserContext,
+        cached: false,
+      };
+    }
 
     // Validate and clean ideas
     const ideas: IImplementationIdea[] = parsed.ideas.map(idea => ({

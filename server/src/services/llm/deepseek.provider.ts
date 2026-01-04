@@ -1,6 +1,18 @@
 import OpenAI from 'openai';
+import { Agent as HttpsAgent } from 'https';
 import { env } from '../../config/env.js';
 import type { LLMProvider, ChatParams, StreamCallbacks } from './types.js';
+
+/**
+ * HTTPS Agent with connection pooling for DeepSeek API
+ */
+const httpsAgent = new HttpsAgent({
+  keepAlive: true,
+  keepAliveMsecs: 30000,
+  maxSockets: 50,
+  maxFreeSockets: 10,
+  timeout: 60000,
+});
 
 export class DeepSeekProvider implements LLMProvider {
   private client: OpenAI;
@@ -11,6 +23,9 @@ export class DeepSeekProvider implements LLMProvider {
     this.client = new OpenAI({
       apiKey: env.DEEPSEEK_API_KEY,
       baseURL: 'https://api.deepseek.com',
+      maxRetries: 3,
+      timeout: 60000,
+      httpAgent: httpsAgent,
     });
     this.model = env.DEEPSEEK_MODEL || 'deepseek-chat';
   }

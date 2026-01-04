@@ -55,8 +55,18 @@ const chunkSchema = new Schema<IChunk>(
   }
 );
 
-// Compound index for efficient retrieval
+// ============================================
+// Database Indexes
+// ============================================
+
+// Compound index for retrieving chunks in order
 chunkSchema.index({ paperId: 1, position: 1 });
+
+// Index for filtering by chunk type within a paper
+chunkSchema.index({ paperId: 1, chunkType: 1 });
+
+// Index for finding chunks by section title
+chunkSchema.index({ paperId: 1, sectionTitle: 1 });
 
 export const Chunk = mongoose.model<IChunk>('Chunk', chunkSchema);
 

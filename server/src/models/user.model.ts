@@ -24,6 +24,7 @@ export interface ITokenUsage {
   lastResetAt: Date;
   pendingRequest: boolean;
   pendingRequestAt?: Date;
+  version: number; // For optimistic locking
 }
 
 export interface IUser extends Document {
@@ -135,6 +136,10 @@ const userSchema = new Schema<IUser>(
       pendingRequestAt: {
         type: Date,
       },
+      version: {
+        type: Number,
+        default: 0,
+      },
     },
   },
   {
@@ -157,5 +162,18 @@ userSchema.methods.comparePassword = async function (
 ): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.password);
 };
+
+// ============================================
+// Database Indexes
+// ============================================
+
+// Unique email index (already created by unique: true, but explicit for clarity)
+userSchema.index({ email: 1 }, { unique: true });
+
+// Token usage index for finding users near their limit
+userSchema.index({ 'tokenUsage.used': 1, 'tokenUsage.allowance': 1 });
+
+// Pending token requests index for admin dashboard
+userSchema.index({ 'tokenUsage.pendingRequest': 1, 'tokenUsage.pendingRequestAt': -1 });
 
 export const User = mongoose.model<IUser>('User', userSchema);

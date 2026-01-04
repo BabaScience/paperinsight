@@ -1,48 +1,49 @@
 import type { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/errors.js';
+import { errorSanitizer } from '../utils/error-sanitizer.js';
 import { env } from '../config/env.js';
 
 interface ErrorResponse {
   status: 'error';
   message: string;
+  code?: string;
   stack?: string;
 }
 
 export function errorHandler(
   error: Error,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction
 ): void {
-  console.error('Error:', error);
+  // Log full error details server-side
+  errorSanitizer.logError(error, {
+    method: req.method,
+    path: req.path,
+    ip: req.ip,
+  });
 
-  if (error instanceof AppError) {
-    const response: ErrorResponse = {
-      status: 'error',
-      message: error.message,
-    };
+  // Sanitize error for client response
+  const sanitized = errorSanitizer.sanitizeError(
+    error,
+    env.NODE_ENV === 'development'
+  );
 
-    if (env.NODE_ENV === 'development') {
-      response.stack = error.stack;
-    }
+  const statusCode = error instanceof AppError 
+    ? error.statusCode 
+    : 500;
 
-    res.status(error.statusCode).json(response);
-    return;
-  }
-
-  // Unknown error
   const response: ErrorResponse = {
     status: 'error',
-    message: env.NODE_ENV === 'production' 
-      ? 'Internal server error' 
-      : error.message,
+    message: sanitized.message,
+    code: sanitized.code,
   };
 
-  if (env.NODE_ENV === 'development') {
-    response.stack = error.stack;
+  if (env.NODE_ENV === 'development' && sanitized.stack) {
+    response.stack = sanitized.stack;
   }
 
-  res.status(500).json(response);
+  res.status(statusCode).json(response);
 }
 
 export function notFoundHandler(req: Request, res: Response): void {

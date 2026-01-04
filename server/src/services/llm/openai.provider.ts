@@ -1,6 +1,19 @@
 import OpenAI from 'openai';
+import { Agent as HttpsAgent } from 'https';
 import { env } from '../../config/env.js';
 import type { LLMProvider, ChatParams, StreamCallbacks } from './types.js';
+
+/**
+ * HTTPS Agent with connection pooling for better performance
+ * Reuses connections instead of creating new ones for each request
+ */
+const httpsAgent = new HttpsAgent({
+  keepAlive: true,           // Keep connections alive for reuse
+  keepAliveMsecs: 30000,     // Keep alive for 30 seconds
+  maxSockets: 50,            // Maximum concurrent connections
+  maxFreeSockets: 10,        // Maximum idle connections to keep
+  timeout: 60000,            // Connection timeout
+});
 
 export class OpenAIProvider implements LLMProvider {
   private client: OpenAI;
@@ -8,6 +21,9 @@ export class OpenAIProvider implements LLMProvider {
   constructor() {
     this.client = new OpenAI({
       apiKey: env.OPENAI_API_KEY,
+      maxRetries: 3,           // Retry failed requests up to 3 times
+      timeout: 60000,          // 60 second timeout
+      httpAgent: httpsAgent,   // Use connection pooling
     });
   }
 

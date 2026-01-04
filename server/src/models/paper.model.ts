@@ -197,8 +197,29 @@ const paperSchema = new Schema<IPaper>(
   }
 );
 
-// Compound indexes for efficient queries
+// ============================================
+// Database Indexes
+// ============================================
+
+// Compound index for user's papers sorted by date (most common query)
 paperSchema.index({ userId: 1, createdAt: -1 });
+
+// Status index for filtering papers by status
 paperSchema.index({ status: 1 });
+
+// Compound index for user + status + date (dashboard queries)
+paperSchema.index({ userId: 1, status: 1, createdAt: -1 });
+
+// Processing steps index for finding papers that need processing
+paperSchema.index({ 'processingSteps.embedding': 1 });
+
+// Text search index for searching papers by title and abstract
+paperSchema.index(
+  { title: 'text', abstract: 'text' },
+  { 
+    weights: { title: 10, abstract: 5 },
+    name: 'paper_text_search',
+  }
+);
 
 export const Paper = mongoose.model<IPaper>('Paper', paperSchema);

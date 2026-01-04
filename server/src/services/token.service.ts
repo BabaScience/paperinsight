@@ -84,37 +84,68 @@ class TokenService {
   }
 
   /**
-   * Record token usage for a user
+   * Record token usage for a user with optimistic locking
+   * Uses version field to prevent race conditions
    */
   async recordUsage(userId: string, tokensUsed: number): Promise<TokenUsageInfo> {
+    const MAX_RETRIES = 3;
+    let retries = 0;
+
     // Ensure token usage is initialized first
     await this.ensureTokenUsageInitialized(userId);
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $inc: { 'tokenUsage.used': tokensUsed } },
-      { new: true }
-    ).select('tokenUsage').lean();
+    while (retries < MAX_RETRIES) {
+      const user = await User.findById(userId).select('tokenUsage').lean();
 
-    if (!user) {
-      throw new Error('User not found');
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const currentUsed = user.tokenUsage?.used ?? 0;
+      const currentVersion = user.tokenUsage?.version ?? 0;
+      const newUsed = currentUsed + tokensUsed;
+
+      // Atomic update with version check (optimistic locking)
+      const result = await User.findOneAndUpdate(
+        {
+          _id: userId,
+          'tokenUsage.version': currentVersion,
+        },
+        {
+          $set: { 'tokenUsage.used': newUsed },
+          $inc: { 'tokenUsage.version': 1 },
+        },
+        { new: true }
+      ).select('tokenUsage').lean();
+
+      if (result) {
+        // Update succeeded
+        const used = result.tokenUsage?.used ?? 0;
+        const allowance = result.tokenUsage?.allowance ?? DEFAULT_ALLOWANCE;
+        const pendingRequest = result.tokenUsage?.pendingRequest ?? false;
+        const remaining = Math.max(0, allowance - used);
+
+        console.log(`📊 Token usage recorded: +${tokensUsed} for user ${userId} (${used}/${allowance})`);
+
+        return {
+          used,
+          allowance,
+          remaining,
+          percentageUsed: allowance > 0 ? (used / allowance) * 100 : 0,
+          hasReachedLimit: used >= allowance,
+          pendingRequest,
+        };
+      }
+
+      // Version mismatch - another request updated concurrently
+      retries++;
+      console.warn(`⚠️ Token usage update conflict for user ${userId}, retry ${retries}/${MAX_RETRIES}`);
+      
+      // Exponential backoff
+      await new Promise(resolve => setTimeout(resolve, 50 * retries));
     }
 
-    const used = user.tokenUsage?.used ?? 0;
-    const allowance = user.tokenUsage?.allowance ?? DEFAULT_ALLOWANCE;
-    const pendingRequest = user.tokenUsage?.pendingRequest ?? false;
-    const remaining = Math.max(0, allowance - used);
-
-    console.log(`📊 Token usage recorded: +${tokensUsed} for user ${userId} (${used}/${allowance})`);
-
-    return {
-      used,
-      allowance,
-      remaining,
-      percentageUsed: allowance > 0 ? (used / allowance) * 100 : 0,
-      hasReachedLimit: used >= allowance,
-      pendingRequest,
-    };
+    throw new Error('Failed to record token usage after retries - concurrent update conflict');
   }
 
   /**
