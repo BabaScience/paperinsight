@@ -14,6 +14,7 @@
     "retry": "Retry",
     "tryAgain": "Try Again",
     "close": "Close",
+    "dismiss": "Dismiss",
     "add": "Add",
     "remove": "Remove",
     "search": "Search",
@@ -33,6 +34,15 @@
     "online": "Online",
     "processing": "Processing...",
     "pressEnterToSend": "Press Enter to send"
+  },
+  "rateLimit": {
+    "title": "Rate Limit Reached",
+    "message": "Too many requests. Please wait before trying again.",
+    "retryIn": "Retry in {{time}}",
+    "authLimit": "Too many login attempts. Please try again later.",
+    "apiLimit": "Too many requests. Please slow down.",
+    "uploadLimit": "Upload limit reached. Please wait before uploading more files.",
+    "queryLimit": "Query limit reached. Please wait before asking more questions."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -74,7 +84,16 @@
     "joinResearchers": "Join thousands of researchers who are accelerating their paper analysis with AI-powered insights.",
     "unlockPower": "Unlock the Power of",
     "aiResearchAnalysis": "AI Research Analysis",
-    "transformPapers": "Transform complex research papers into actionable insights with our advanced RAG-powered analysis platform."
+    "transformPapers": "Transform complex research papers into actionable insights with our advanced RAG-powered analysis platform.",
+    "logoutSuccess": "Logged out successfully",
+    "loggingOut": "Logging out...",
+    "logoutFailed": "Logout failed, but you've been signed out locally",
+    "logoutAllDevices": "Logout from all devices",
+    "logoutAllDevicesDesc": "This will sign you out from all devices and browsers",
+    "logoutAllSuccess": "Logged out from all devices successfully",
+    "logoutAllConfirm": "Are you sure you want to logout from all devices? You will need to login again on each device.",
+    "sessionRevoked": "Your session has been revoked. Please log in again.",
+    "tokenExpired": "Your session has expired. Please log in again."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -206,7 +225,9 @@
     "requestExtensionPlaceholder": "I'm working on research about...",
     "submitRequest": "Submit Request",
     "requestSent": "Request submitted successfully!",
-    "requestFailed": "Failed to submit request"
+    "requestFailed": "Failed to submit request",
+    "security": "Security",
+    "securityDescription": "Manage your account security settings"
   },
   "analysis": {
     "paperNotFound": "Paper not found",

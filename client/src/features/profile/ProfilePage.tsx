@@ -19,10 +19,14 @@ import {
   Send,
   HourglassEmpty,
   DataUsage,
+  Security,
+  LogoutOutlined,
 } from '@mui/icons-material';
 import { CircularProgress, Chip, Slider, LinearProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { profileApi, ProfileData, PreferredModel, TokenUsageInfo } from '@/lib/api';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { profileApi, authApi, ProfileData, PreferredModel, TokenUsageInfo } from '@/lib/api';
 import { useProfileStore, ExpertiseLevel, PreferredStyle } from '@/stores/profileStore';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -88,8 +92,9 @@ const TOKEN_LIMIT_MARKS = [
 
 export function ProfilePage() {
   const { profile, setProfile, setLoading, setError, isLoading } = useProfileStore();
-  const { user } = useAuthStore();
+  const { user, clearAuth } = useAuthStore();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   
   const [formData, setFormData] = useState<ProfileData>({
     researchField: '',
@@ -115,6 +120,10 @@ export function ProfilePage() {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestMessage, setRequestMessage] = useState('');
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+  
+  // Security state
+  const [showLogoutAllModal, setShowLogoutAllModal] = useState(false);
+  const [isLoggingOutAll, setIsLoggingOutAll] = useState(false);
 
   // Load profile on mount
   useEffect(() => {
@@ -200,6 +209,25 @@ export function ProfilePage() {
       console.error('Failed to request extension:', err);
     } finally {
       setIsSubmittingRequest(false);
+    }
+  };
+
+  const handleLogoutAll = async () => {
+    try {
+      setIsLoggingOutAll(true);
+      await authApi.logoutAll();
+      toast.success(t('auth.logoutAllSuccess'));
+      clearAuth();
+      navigate('/login');
+    } catch (err) {
+      console.error('Failed to logout from all devices:', err);
+      toast.error(t('auth.logoutFailed'));
+      // Still clear local auth even if API fails
+      clearAuth();
+      navigate('/login');
+    } finally {
+      setIsLoggingOutAll(false);
+      setShowLogoutAllModal(false);
     }
   };
 
@@ -487,6 +515,97 @@ export function ProfilePage() {
                     <Send className="w-4 h-4" />
                   )}
                   {t('profile.submitRequest')}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Security Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.08 }}
+        className="card"
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-coral to-red-600 flex items-center justify-center">
+            <Security className="text-white" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">{t('profile.security', 'Security')}</h3>
+            <p className="text-sm text-muted">
+              {t('profile.securityDescription', 'Manage your account security settings')}
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <button
+            onClick={() => setShowLogoutAllModal(true)}
+            className="w-full flex items-center gap-3 p-4 bg-surface-hover/50 hover:bg-surface-hover rounded-xl transition-colors text-left"
+          >
+            <LogoutOutlined className="text-accent-coral" />
+            <div className="flex-1">
+              <p className="font-medium text-foreground">{t('auth.logoutAllDevices')}</p>
+              <p className="text-sm text-muted">{t('auth.logoutAllDevicesDesc')}</p>
+            </div>
+          </button>
+        </div>
+      </motion.div>
+
+      {/* Logout All Devices Confirmation Modal */}
+      <AnimatePresence>
+        {showLogoutAllModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowLogoutAllModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-background rounded-2xl p-6 max-w-md w-full shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-accent-coral/10 flex items-center justify-center">
+                  <LogoutOutlined className="text-accent-coral text-2xl" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {t('auth.logoutAllDevices')}
+                  </h3>
+                </div>
+              </div>
+              <p className="text-sm text-muted mb-6">
+                {t('auth.logoutAllConfirm')}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLogoutAllModal(false)}
+                  disabled={isLoggingOutAll}
+                  className="flex-1 px-4 py-2.5 text-muted hover:text-foreground transition-colors rounded-xl border border-border hover:bg-surface-hover disabled:opacity-50"
+                >
+                  {t('common.cancel')}
+                </button>
+                <motion.button
+                  onClick={handleLogoutAll}
+                  disabled={isLoggingOutAll}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex-1 px-4 py-2.5 bg-accent-coral text-white rounded-xl font-medium hover:bg-accent-coral/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isLoggingOutAll ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    <LogoutOutlined className="w-5 h-5" />
+                  )}
+                  {t('common.confirm')}
                 </motion.button>
               </div>
             </motion.div>

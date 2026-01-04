@@ -15,12 +15,15 @@ interface AuthState {
   refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isLoggingOut: boolean;
   
   setUser: (user: User) => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
   login: (user: User, accessToken: string, refreshToken: string) => void;
   logout: () => void;
+  clearAuth: () => void;
   setLoading: (loading: boolean) => void;
+  setLoggingOut: (loggingOut: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -31,6 +34,7 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       isAuthenticated: false,
       isLoading: true,
+      isLoggingOut: false,
       
       setUser: (user) => set({ user }),
       
@@ -46,6 +50,7 @@ export const useAuthStore = create<AuthState>()(
           isLoading: false,
         }),
       
+      // Legacy logout - just clears state (for backward compatibility)
       logout: () =>
         set({
           user: null,
@@ -53,9 +58,22 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           isAuthenticated: false,
           isLoading: false,
+          isLoggingOut: false,
+        }),
+      
+      // Clear auth state (used by API interceptor on token revocation)
+      clearAuth: () =>
+        set({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          isAuthenticated: false,
+          isLoading: false,
+          isLoggingOut: false,
         }),
       
       setLoading: (isLoading) => set({ isLoading }),
+      setLoggingOut: (isLoggingOut) => set({ isLoggingOut }),
     }),
     {
       name: 'auth-storage',

@@ -13,11 +13,13 @@ import {
 } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { profileApi, TokenUsageInfo } from '@/lib/api';
+import { RateLimitBanner } from './RateLimitBanner';
+import { profileApi, authApi, TokenUsageInfo } from '@/lib/api';
 import { Tooltip, CircularProgress } from '@mui/material';
 
 const navItems = [
@@ -32,7 +34,7 @@ export function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [tokenUsage, setTokenUsage] = useState<TokenUsageInfo | null>(null);
   const [isLoadingTokens, setIsLoadingTokens] = useState(false);
-  const { user, logout } = useAuthStore();
+  const { user, refreshToken, clearAuth, isLoggingOut, setLoggingOut } = useAuthStore();
   const { resolvedMode } = useThemeStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -75,9 +77,22 @@ export function Layout() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    
+    setLoggingOut(true);
+    try {
+      // Call logout API to revoke tokens on server
+      await authApi.logout(refreshToken || undefined);
+      toast.success(t('auth.logoutSuccess', 'Logged out successfully'));
+    } catch (error) {
+      // Even if API fails, we still clear local state
+      console.warn('Logout API call failed:', error);
+    } finally {
+      // Always clear local auth state and redirect
+      clearAuth();
+      navigate('/login');
+    }
   };
 
   // Get color based on usage percentage
@@ -267,10 +282,19 @@ export function Layout() {
         </div>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-3 mt-2 text-theme-muted hover:text-accent-coral hover:bg-theme-surface-hover rounded-xl transition-all touch-manipulation"
+          disabled={isLoggingOut}
+          className="w-full flex items-center gap-3 px-3 py-3 mt-2 text-theme-muted hover:text-accent-coral hover:bg-theme-surface-hover rounded-xl transition-all touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Logout className="w-5 h-5 flex-shrink-0" />
-          {(sidebarOpen || isMobile) && <span className="font-medium">{t('nav.logout')}</span>}
+          {isLoggingOut ? (
+            <CircularProgress size={20} className="text-theme-muted flex-shrink-0" />
+          ) : (
+            <Logout className="w-5 h-5 flex-shrink-0" />
+          )}
+          {(sidebarOpen || isMobile) && (
+            <span className="font-medium">
+              {isLoggingOut ? t('auth.loggingOut', 'Logging out...') : t('nav.logout')}
+            </span>
+          )}
         </button>
       </div>
     </>
@@ -278,6 +302,9 @@ export function Layout() {
 
   return (
     <div className="flex min-h-screen">
+      {/* Rate Limit Banner */}
+      <RateLimitBanner />
+      
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 h-16 glass border-b border-theme-border/50 z-40 flex items-center justify-between px-4">
         <button

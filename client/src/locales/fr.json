@@ -14,6 +14,7 @@
     "retry": "Réessayer",
     "tryAgain": "Réessayer",
     "close": "Fermer",
+    "dismiss": "Ignorer",
     "add": "Ajouter",
     "remove": "Supprimer",
     "search": "Rechercher",
@@ -33,6 +34,15 @@
     "online": "En ligne",
     "processing": "Traitement...",
     "pressEnterToSend": "Appuyez sur Entrée pour envoyer"
+  },
+  "rateLimit": {
+    "title": "Limite de requêtes atteinte",
+    "message": "Trop de requêtes. Veuillez patienter avant de réessayer.",
+    "retryIn": "Réessayer dans {{time}}",
+    "authLimit": "Trop de tentatives de connexion. Veuillez réessayer plus tard.",
+    "apiLimit": "Trop de requêtes. Veuillez ralentir.",
+    "uploadLimit": "Limite de téléversement atteinte. Veuillez patienter avant de téléverser d'autres fichiers.",
+    "queryLimit": "Limite de requêtes atteinte. Veuillez patienter avant de poser d'autres questions."
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -74,7 +84,16 @@
     "joinResearchers": "Rejoignez des milliers de chercheurs qui accélèrent leur analyse d'articles grâce à des insights alimentés par l'IA.",
     "unlockPower": "Libérez la puissance de",
     "aiResearchAnalysis": "l'analyse de recherche par IA",
-    "transformPapers": "Transformez des articles de recherche complexes en insights exploitables avec notre plateforme d'analyse avancée basée sur RAG."
+    "transformPapers": "Transformez des articles de recherche complexes en insights exploitables avec notre plateforme d'analyse avancée basée sur RAG.",
+    "logoutSuccess": "Déconnexion réussie",
+    "loggingOut": "Déconnexion en cours...",
+    "logoutFailed": "Échec de la déconnexion, mais vous avez été déconnecté localement",
+    "logoutAllDevices": "Déconnexion de tous les appareils",
+    "logoutAllDevicesDesc": "Cela vous déconnectera de tous les appareils et navigateurs",
+    "logoutAllSuccess": "Déconnexion de tous les appareils réussie",
+    "logoutAllConfirm": "Êtes-vous sûr de vouloir vous déconnecter de tous les appareils ? Vous devrez vous reconnecter sur chaque appareil.",
+    "sessionRevoked": "Votre session a été révoquée. Veuillez vous reconnecter.",
+    "tokenExpired": "Votre session a expiré. Veuillez vous reconnecter."
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -206,7 +225,9 @@
     "requestExtensionPlaceholder": "Je travaille sur une recherche concernant...",
     "submitRequest": "Soumettre la demande",
     "requestSent": "Demande envoyée avec succès !",
-    "requestFailed": "Échec de l'envoi de la demande"
+    "requestFailed": "Échec de l'envoi de la demande",
+    "security": "Sécurité",
+    "securityDescription": "Gérez les paramètres de sécurité de votre compte"
   },
   "analysis": {
     "paperNotFound": "Article non trouvé",
