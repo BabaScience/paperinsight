@@ -11,16 +11,19 @@ import {
   Token,
   Close,
 } from '@mui/icons-material';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
+import { useProfileStore } from '@/stores/profileStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { RateLimitBanner } from './RateLimitBanner';
+import { ProfileCompletionModal } from './ProfileCompletionModal';
 import { profileApi, authApi, TokenUsageInfo } from '@/lib/api';
 import { Tooltip, CircularProgress } from '@mui/material';
+import { isProfileComplete } from '@/utils/profileUtils';
 
 const navItems = [
   { path: '/', icon: Home, labelKey: 'nav.dashboard' },
@@ -34,7 +37,9 @@ export function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [tokenUsage, setTokenUsage] = useState<TokenUsageInfo | null>(null);
   const [isLoadingTokens, setIsLoadingTokens] = useState(false);
-  const { user, refreshToken, clearAuth, isLoggingOut, setLoggingOut } = useAuthStore();
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const { user, refreshToken, clearAuth, isLoggingOut, setLoggingOut, isAuthenticated } = useAuthStore();
+  const { profile, setProfile, setLoading } = useProfileStore();
   const { resolvedMode } = useThemeStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -57,6 +62,27 @@ export function Layout() {
     };
   }, [mobileMenuOpen]);
 
+  const loadProfile = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await profileApi.get();
+      const loadedProfile = response.data.data.profile;
+      setProfile(loadedProfile);
+    } catch (err) {
+      console.error('Failed to load profile:', err);
+      // Don't show error toast for profile loading failures, just log it
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading, setProfile]);
+
+  // Load profile when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadProfile();
+    }
+  }, [isAuthenticated, loadProfile]);
+
   // Load token usage on mount and periodically refresh
   useEffect(() => {
     loadTokenUsage();
@@ -64,6 +90,18 @@ export function Layout() {
     const interval = setInterval(loadTokenUsage, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  // Check profile completeness and show modal if needed
+  useEffect(() => {
+    if (isAuthenticated && profile !== null) {
+      // Only show modal if profile is incomplete and user is not already on profile page
+      if (!isProfileComplete(profile) && location.pathname !== '/profile') {
+        setShowProfileModal(true);
+      } else {
+        setShowProfileModal(false);
+      }
+    }
+  }, [profile, location.pathname, isAuthenticated]);
 
   const loadTokenUsage = async () => {
     try {
@@ -302,6 +340,12 @@ export function Layout() {
 
   return (
     <div className="flex min-h-screen">
+      {/* Profile Completion Modal */}
+      <ProfileCompletionModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
+      
       {/* Rate Limit Banner */}
       <RateLimitBanner />
       

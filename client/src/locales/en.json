@@ -367,6 +367,12 @@
   },
   "languageSwitcher": {
     "toggleLanguage": "Toggle language"
+  },
+  "profileCompletion": {
+    "title": "Complete Your Profile",
+    "message": "To get the best experience and personalized AI responses, please complete your profile. Add your research field, expertise level, preferred style, language, and AI model.",
+    "goToProfile": "Go to Profile",
+    "dismiss": "Dismiss"
   }
 }
 

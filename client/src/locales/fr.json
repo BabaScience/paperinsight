@@ -367,6 +367,12 @@
   },
   "languageSwitcher": {
     "toggleLanguage": "Changer de langue"
+  },
+  "profileCompletion": {
+    "title": "Complétez votre profil",
+    "message": "Pour obtenir la meilleure expérience et des réponses IA personnalisées, veuillez compléter votre profil. Ajoutez votre domaine de recherche, votre niveau d'expertise, votre style préféré, votre langue et votre modèle IA.",
+    "goToProfile": "Aller au profil",
+    "dismiss": "Ignorer"
   }
 }
 
