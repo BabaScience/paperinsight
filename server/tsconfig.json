@@ -19,6 +19,8 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": "./src",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "paths": {
       "@/*": ["./*"],
       "@config/*": ["./config/*"],
@@ -28,7 +30,8 @@
       "@services/*": ["./services/*"],
       "@workers/*": ["./workers/*"],
       "@routes/*": ["./routes/*"],
-      "@utils/*": ["./utils/*"]
+      "@utils/*": ["./utils/*"],
+      "@di/*": ["./di/*"]
     }
   },
   "include": ["src/**/*"],

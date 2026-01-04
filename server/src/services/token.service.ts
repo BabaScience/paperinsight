@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+import { injectable } from 'inversify';
 import { User } from '../models/user.model.js';
 import { emailService } from './email.service.js';
 import { env } from '../config/env.js';
@@ -14,7 +16,8 @@ export interface TokenUsageInfo {
 // Default token allowance from env
 const DEFAULT_ALLOWANCE = env.USER_TOKEN_ALLOWANCE;
 
-class TokenService {
+@injectable()
+export class TokenService {
   /**
    * Ensure token usage is initialized for a user
    * This handles legacy users who don't have tokenUsage set

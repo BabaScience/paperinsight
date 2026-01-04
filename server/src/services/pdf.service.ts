@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+import { injectable } from 'inversify';
 // @ts-expect-error - pdf-parse has no type definitions
 import pdfParse from 'pdf-parse';
 
@@ -35,7 +37,8 @@ const SECTION_PATTERNS = [
   /^\d+\.?\s+[A-Z][a-z]+/,
 ];
 
-class PdfService {
+@injectable()
+export class PdfService {
   /**
    * Parse PDF from a buffer
    * @param buffer - PDF file buffer

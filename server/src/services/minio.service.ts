@@ -1,8 +1,11 @@
+import 'reflect-metadata';
+import { injectable } from 'inversify';
 import { minioClient } from '../config/minio.js';
 import { env } from '../config/env.js';
 import { v4 as uuidv4 } from 'uuid';
 
-class MinioService {
+@injectable()
+export class MinioService {
   private bucket = env.MINIO_BUCKET;
 
   /**

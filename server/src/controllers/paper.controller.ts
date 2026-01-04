@@ -12,6 +12,7 @@ import { env } from '../config/env.js';
 import type { AuthRequest } from '../middleware/auth.js';
 import { BadRequestError, NotFoundError, ForbiddenError } from '../utils/errors.js';
 import { fileValidator } from '../middleware/file-validation.js';
+import { withTransaction, withSession } from '../utils/transaction.js';
 
 const pdfQueue = new Queue('pdf-processing', { connection: redis });
 
@@ -144,6 +145,7 @@ class PaperController {
 
   async delete(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
+      // First, verify the paper exists and user has permission
       const paper = await Paper.findById(req.params.id);
 
       if (!paper) {
@@ -157,26 +159,42 @@ class PaperController {
       // Store file info before deletion for cleanup
       const fileUrl = paper.fileUrl;
       const paperId = paper._id.toString();
+      const paperObjectId = paper._id;
 
-      // Delete database records
-      // Note: In production with replica set, wrap these in a transaction
-      await Chunk.deleteMany({ paperId: paper._id });
-      await Conversation.deleteMany({ paperId: paper._id });
-      await paper.deleteOne();
+      // Use transaction for database operations
+      await withTransaction(async (session) => {
+        // Delete all related database records atomically
+        await Chunk.deleteMany(
+          { paperId: paperObjectId },
+          withSession(session, {})
+        );
+        
+        await Conversation.deleteMany(
+          { paperId: paperObjectId },
+          withSession(session, {})
+        );
+        
+        await Paper.deleteOne(
+          { _id: paperObjectId },
+          withSession(session, {})
+        );
+
+        console.log(`📄 Paper ${paperId} and related data deleted from database`);
+      });
 
       // External service cleanup after DB operations succeed
       // These can't be rolled back anyway, so we use Promise.allSettled
-      await Promise.allSettled([
+      const cleanupResults = await Promise.allSettled([
         minioService.deleteFile(fileUrl),
         vectorService.deleteByPaperId(paperId),
-      ]).then((results) => {
-        // Log any failures for manual cleanup if needed
-        results.forEach((result, index) => {
-          if (result.status === 'rejected') {
-            const service = index === 0 ? 'MinIO' : 'Qdrant';
-            console.error(`⚠️ Failed to delete from ${service}:`, result.reason);
-          }
-        });
+      ]);
+
+      // Log any failures for manual cleanup if needed
+      cleanupResults.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          const service = index === 0 ? 'MinIO' : 'Qdrant';
+          console.error(`⚠️ Failed to delete from ${service}:`, result.reason);
+        }
       });
 
       res.json({

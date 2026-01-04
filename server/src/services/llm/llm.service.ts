@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+import { injectable } from 'inversify';
 import { env } from '../../config/env.js';
 import { OpenAIProvider } from './openai.provider.js';
 import { DeepSeekProvider } from './deepseek.provider.js';
@@ -10,7 +12,8 @@ export const AVAILABLE_PROVIDERS: { name: LLMProviderName; label: string; descri
   { name: 'deepseek', label: 'DeepSeek', description: 'Cost-effective alternative with strong performance', requiresApiKey: true },
 ];
 
-class LLMService {
+@injectable()
+export class LLMService {
   private providers: Map<string, LLMProvider>;
 
   constructor() {
@@ -64,8 +67,21 @@ class LLMService {
     const provider = this.getProvider(providerName);
     return provider.chatStream(params, callbacks);
   }
+  /**
+   * Get the model name for a provider (for token counting)
+   */
+  getModelName(providerName: 'openai' | 'deepseek'): string {
+    switch (providerName) {
+      case 'openai':
+        return 'gpt-4o';
+      case 'deepseek':
+        return 'deepseek-chat';
+      default:
+        return 'gpt-4';
+    }
+  }
 }
 
+// Legacy export for backward compatibility
 export const llmService = new LLMService();
 export type { ChatParams, StreamCallbacks, ChatMessage } from './types.js';
-

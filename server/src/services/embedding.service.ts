@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+import { injectable } from 'inversify';
 import OpenAI from 'openai';
 import { get_encoding } from 'tiktoken';
 import { env } from '../config/env.js';
@@ -13,7 +15,8 @@ const CACHE_TTL = 60 * 60 * 24 * 30; // 30 days
 const MAX_TOKENS_PER_TEXT = 8000; // Leave some buffer from 8192 limit
 const MAX_TOKENS_PER_BATCH = 8000; // Safe batch limit
 
-class EmbeddingService {
+@injectable()
+export class EmbeddingService {
   private encoding = get_encoding('cl100k_base');
 
   private ensureString(text: unknown): string {
@@ -193,4 +196,5 @@ class EmbeddingService {
   }
 }
 
+// Legacy export for backward compatibility
 export const embeddingService = new EmbeddingService();

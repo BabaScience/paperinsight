@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+import { injectable } from 'inversify';
 import { qdrantClient } from '../config/qdrant.js';
 import { env } from '../config/env.js';
 import { v5 as uuidv5 } from 'uuid';
@@ -17,7 +19,8 @@ interface SearchResult {
   payload: Record<string, unknown>;
 }
 
-class VectorService {
+@injectable()
+export class VectorService {
   private collectionName = env.QDRANT_COLLECTION;
 
   // Convert MongoDB ObjectId to valid UUID for Qdrant
@@ -99,5 +102,5 @@ class VectorService {
   }
 }
 
+// Legacy export for backward compatibility
 export const vectorService = new VectorService();
-

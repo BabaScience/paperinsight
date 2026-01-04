@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+import { injectable } from 'inversify';
 import { get_encoding, Tiktoken } from 'tiktoken';
 import { env } from '../config/env.js';
 import { embeddingService } from './embedding.service.js';
@@ -264,7 +266,8 @@ IMPORTANT: You MUST respond entirely in ${profile.preferredLanguage}. All explan
   return prompt;
 }
 
-class RagService {
+@injectable()
+export class RagService {
   // Use cl100k_base encoding (used by GPT-4, GPT-3.5-turbo, text-embedding-ada-002)
   private encoding: Tiktoken;
 

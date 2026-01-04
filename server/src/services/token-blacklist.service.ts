@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+import { injectable } from 'inversify';
 import { redis } from '../config/redis.js';
 
 /**
@@ -5,7 +7,8 @@ import { redis } from '../config/redis.js';
  * Uses Redis to track revoked JWT tokens until they expire
  * This enables logout functionality and token revocation
  */
-class TokenBlacklistService {
+@injectable()
+export class TokenBlacklistService {
   private readonly PREFIX = 'blacklist:token:';
 
   /**

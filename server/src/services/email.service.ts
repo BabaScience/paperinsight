@@ -1,7 +1,10 @@
+import 'reflect-metadata';
+import { injectable } from 'inversify';
 import { Resend } from 'resend';
 import { env } from '../config/env.js';
 
-class EmailService {
+@injectable()
+export class EmailService {
   private resend: Resend | null = null;
 
   constructor() {

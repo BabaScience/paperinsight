@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+import { injectable } from 'inversify';
 import { get_encoding } from 'tiktoken';
 
 interface ChunkResult {
@@ -17,7 +19,8 @@ interface Section {
   position: number;
 }
 
-class ChunkingService {
+@injectable()
+export class ChunkingService {
   private encoding = get_encoding('cl100k_base');
   private readonly maxChunkSize = 512; // tokens
   private readonly chunkOverlap = 50; // tokens

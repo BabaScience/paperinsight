@@ -1,10 +1,13 @@
+import 'reflect-metadata';
+import { injectable } from 'inversify';
 import { redis } from '../config/redis.js';
 
 /**
  * Cache Service for Redis-based caching
  * Provides caching for paper analysis, user profiles, and other frequently accessed data
  */
-class CacheService {
+@injectable()
+export class CacheService {
   private readonly DEFAULT_TTL = 3600; // 1 hour in seconds
   private readonly ANALYSIS_TTL = 86400; // 24 hours for analysis
   private readonly PROFILE_TTL = 1800; // 30 minutes for profiles
