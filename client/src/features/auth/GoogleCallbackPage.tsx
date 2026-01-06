@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
+import { authApi } from '@/lib/api';
 
 export function GoogleCallbackPage() {
   const [searchParams] = useSearchParams();
@@ -33,32 +34,49 @@ export function GoogleCallbackPage() {
     }
 
     if (accessToken && refreshToken && userId) {
-      try {
-        // Create user object from available data
-        // We'll fetch full user data after login
-        const user = {
-          id: userId,
-          email: '', // Will be fetched from /me endpoint
-          name: '', // Will be fetched from /me endpoint
-          emailVerified: true, // Google users are pre-verified
-        };
+      // Fetch user data asynchronously
+      const fetchUserAndLogin = async () => {
+        try {
+          // Set tokens first so the API call can use them
+          const tempUser = {
+            id: userId,
+            email: '',
+            name: '',
+            emailVerified: true,
+          };
+          login(tempUser, accessToken, refreshToken);
+          
+          // Now fetch the full user data
+          const response = await authApi.me();
+          const userData = response.data.data.user;
 
-        login(user, accessToken, refreshToken);
-        setStatus('success');
-        toast.success(t('auth.loginSuccess', 'Logged in successfully'));
-        
-        // Redirect to dashboard after short delay
-        setTimeout(() => {
-          navigate('/');
-        }, 1000);
-      } catch (error: any) {
-        setStatus('error');
-        setErrorMessage(error.message || t('auth.googleAuthFailed', 'Failed to complete Google authentication'));
-        toast.error(error.message || t('auth.googleAuthFailed', 'Failed to complete Google authentication'));
-        setTimeout(() => {
-          navigate('/login');
-        }, 3000);
-      }
+          const user = {
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            emailVerified: userData.emailVerified,
+            profile: userData.profile,
+          };
+
+          login(user, accessToken, refreshToken);
+          setStatus('success');
+          toast.success(t('auth.loginSuccess', 'Logged in successfully'));
+          
+          // Redirect to dashboard after short delay
+          setTimeout(() => {
+            navigate('/');
+          }, 1000);
+        } catch (error: any) {
+          setStatus('error');
+          setErrorMessage(error.message || t('auth.googleAuthFailed', 'Failed to complete Google authentication'));
+          toast.error(error.message || t('auth.googleAuthFailed', 'Failed to complete Google authentication'));
+          setTimeout(() => {
+            navigate('/login');
+          }, 3000);
+        }
+      };
+
+      fetchUserAndLogin();
     } else {
       setStatus('error');
       setErrorMessage(t('auth.missingTokens', 'Missing authentication tokens'));
