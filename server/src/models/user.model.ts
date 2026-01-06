@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { env } from '../config/env.js';
 
 export type ExpertiseLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert';
@@ -34,9 +35,13 @@ export interface IUser extends Document {
   name: string;
   profile?: IUserProfile;
   tokenUsage: ITokenUsage;
+  emailVerified: boolean;
+  emailVerificationToken?: string;
+  emailVerificationTokenExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
+  generateEmailVerificationToken(): string;
 }
 
 const profileSchema = new Schema<IUserProfile>(
@@ -112,6 +117,18 @@ const userSchema = new Schema<IUser>(
       required: true,
       trim: true,
     },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationToken: {
+      type: String,
+      select: false,
+    },
+    emailVerificationTokenExpires: {
+      type: Date,
+      select: false,
+    },
     profile: {
       type: profileSchema,
       default: {},
@@ -163,6 +180,14 @@ userSchema.methods.comparePassword = async function (
   return bcrypt.compare(candidatePassword, this.password);
 };
 
+// Generate email verification token
+userSchema.methods.generateEmailVerificationToken = function (): string {
+  const token = crypto.randomBytes(32).toString('hex');
+  this.emailVerificationToken = crypto.createHash('sha256').update(token).digest('hex');
+  this.emailVerificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  return token;
+};
+
 // ============================================
 // Database Indexes
 // ============================================
@@ -175,5 +200,8 @@ userSchema.index({ 'tokenUsage.used': 1, 'tokenUsage.allowance': 1 });
 
 // Pending token requests index for admin dashboard
 userSchema.index({ 'tokenUsage.pendingRequest': 1, 'tokenUsage.pendingRequestAt': -1 });
+
+// Email verification token index
+userSchema.index({ emailVerificationToken: 1 });
 
 export const User = mongoose.model<IUser>('User', userSchema);

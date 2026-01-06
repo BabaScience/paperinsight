@@ -43,6 +43,19 @@ authRouter.post(
   authController.logoutAll
 );
 
+// Email verification
+authRouter.get(
+  '/verify-email',
+  validate(authSchemas.verifyEmail),
+  authController.verifyEmail
+);
+
+authRouter.post(
+  '/resend-verification',
+  validate(authSchemas.resendVerification),
+  authController.resendVerificationEmail
+);
+
 
 
 

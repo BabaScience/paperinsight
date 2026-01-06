@@ -13,6 +13,8 @@ import {
   ConflictError 
 } from '../utils/errors.js';
 import { tokenBlacklistService } from '../services/token-blacklist.service.js';
+import { emailService } from '../services/email.service.js';
+import crypto from 'crypto';
 
 class AuthController {
   async register(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -27,20 +29,28 @@ class AuthController {
 
       // Create new user
       const user = new User({ email, password, name });
+      
+      // Generate email verification token
+      const verificationToken = user.generateEmailVerificationToken();
       await user.save();
 
-      // Generate tokens
-      const tokens = generateTokens(user._id.toString());
+      // Send verification email
+      await emailService.sendVerificationEmail(
+        { name: user.name, email: user.email },
+        verificationToken,
+        env.FRONTEND_URL
+      );
 
       res.status(201).json({
         status: 'success',
+        message: 'Registration successful. Please check your email to verify your account.',
         data: {
           user: {
             id: user._id,
             email: user.email,
             name: user.name,
+            emailVerified: user.emailVerified,
           },
-          ...tokens,
         },
       });
     } catch (error) {
@@ -66,6 +76,11 @@ class AuthController {
         throw new UnauthorizedError('Invalid email or password');
       }
 
+      // Check if email is verified
+      if (!user.emailVerified) {
+        throw new UnauthorizedError('Please verify your email address before logging in. Check your inbox for the verification link.');
+      }
+
       // Generate tokens
       const tokens = generateTokens(user._id.toString());
 
@@ -76,6 +91,7 @@ class AuthController {
             id: user._id,
             email: user.email,
             name: user.name,
+            emailVerified: user.emailVerified,
           },
           ...tokens,
         },
@@ -97,6 +113,11 @@ class AuthController {
       
       if (!user) {
         throw new UnauthorizedError('User not found');
+      }
+
+      // Check if email is verified
+      if (!user.emailVerified) {
+        throw new UnauthorizedError('Please verify your email address before accessing this resource.');
       }
 
       // Generate new tokens
@@ -130,6 +151,7 @@ class AuthController {
             id: user._id,
             email: user.email,
             name: user.name,
+            emailVerified: user.emailVerified,
             profile: user.profile || {},
             createdAt: user.createdAt,
           },
@@ -189,6 +211,111 @@ class AuthController {
       res.json({
         status: 'success',
         message: 'Logged out from all devices successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async verifyEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { token } = req.query;
+
+      if (!token || typeof token !== 'string') {
+        throw new BadRequestError('Verification token is required');
+      }
+
+      // Hash the token to compare with stored hash
+      const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+      // Find user with this token and check if it's not expired
+      const user = await User.findOne({
+        emailVerificationToken: hashedToken,
+        emailVerificationTokenExpires: { $gt: new Date() },
+      });
+
+      if (!user) {
+        throw new BadRequestError('Invalid or expired verification token');
+      }
+
+      // Update using updateOne to avoid Mongoose validation issues
+      await User.updateOne(
+        { _id: user._id },
+        {
+          $set: {
+            emailVerified: true,
+          },
+          $unset: {
+            emailVerificationToken: '',
+            emailVerificationTokenExpires: '',
+          },
+        }
+      );
+
+      // Send success email
+      await emailService.sendVerificationSuccessEmail({
+        name: user.name,
+        email: user.email,
+      });
+
+      res.json({
+        status: 'success',
+        message: 'Email verified successfully. You can now log in.',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async resendVerificationEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        throw new BadRequestError('Email is required');
+      }
+
+      const user = await User.findOne({ email });
+
+      if (!user) {
+        // Don't reveal if user exists or not for security
+        res.json({
+          status: 'success',
+          message: 'If an account with this email exists and is not verified, a verification email has been sent.',
+        });
+        return;
+      }
+
+      if (user.emailVerified) {
+        throw new BadRequestError('Email is already verified');
+      }
+
+      // Generate verification token
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      // Update using updateOne to avoid Mongoose validation issues
+      await User.updateOne(
+        { _id: user._id },
+        {
+          $set: {
+            emailVerificationToken: hashedToken,
+            emailVerificationTokenExpires: expiresAt,
+          },
+        }
+      );
+
+      // Send verification email
+      await emailService.sendVerificationEmail(
+        { name: user.name, email: user.email },
+        verificationToken,
+        env.FRONTEND_URL
+      );
+
+      res.json({
+        status: 'success',
+        message: 'Verification email sent. Please check your inbox.',
       });
     } catch (error) {
       next(error);

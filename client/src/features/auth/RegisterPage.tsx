@@ -15,7 +15,6 @@ import { CircularProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { authApi } from '@/lib/api';
-import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { ThemeToggleSimple } from '@/components/ThemeToggle';
 import { LanguageSwitcherSimple } from '@/components/LanguageSwitcher';
@@ -31,7 +30,6 @@ export function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuthStore();
   const { resolvedMode } = useThemeStore();
   const { t } = useTranslation();
 
@@ -63,10 +61,9 @@ export function RegisterPage() {
         email: data.email,
         password: data.password,
       });
-      const { user, accessToken, refreshToken } = response.data.data;
-      login(user, accessToken, refreshToken);
-      toast.success(t('auth.registerSuccess'));
-      navigate('/');
+      toast.success(response.data.message || t('auth.registerSuccess'));
+      // Redirect to verification page with email
+      navigate(`/verify-email?email=${encodeURIComponent(data.email)}`);
     } catch (error: any) {
       toast.error(error.response?.data?.message || t('auth.registerFailed'));
     } finally {

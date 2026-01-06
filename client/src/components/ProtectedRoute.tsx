@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuthStore();
+  const { isAuthenticated, isLoading, user } = useAuthStore();
   const location = useLocation();
 
   if (isLoading) {
@@ -20,6 +20,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Check if email is verified
+  // Note: emailVerified might be undefined for existing users, so we check explicitly for false
+  if (user && user.emailVerified === false) {
+    return <Navigate to={`/verify-email${user.email ? `?email=${encodeURIComponent(user.email)}` : ''}`} replace />;
   }
 
   return <>{children}</>;

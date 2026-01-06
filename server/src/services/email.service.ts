@@ -143,6 +143,122 @@ export class EmailService {
       return false;
     }
   }
+
+  /**
+   * Send email verification link to user
+   */
+  async sendVerificationEmail(
+    user: { name: string; email: string },
+    verificationToken: string,
+    baseUrl: string = 'https://lunaiapp.com'
+  ): Promise<boolean> {
+    if (!this.resend) {
+      console.warn('📧 Email service not configured. Verification email logged only.');
+      console.log(`
+        ========================================
+        EMAIL VERIFICATION
+        ========================================
+        User: ${user.name} (${user.email})
+        Verification Link: ${baseUrl}/verify-email?token=${verificationToken}
+        ========================================
+      `);
+      return true;
+    }
+
+    const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}`;
+
+    try {
+      const { error } = await this.resend.emails.send({
+        from: 'LUNAI <noreply@lunaiapp.com>',
+        to: user.email,
+        subject: 'Verify your email address - LUNAI',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #6366f1;">Welcome to LUNAI, ${user.name}!</h2>
+            
+            <p>Thank you for signing up. Please verify your email address to complete your registration and start using LUNAI.</p>
+            
+            <div style="margin: 30px 0; text-align: center;">
+              <a href="${verificationUrl}" 
+                 style="background: #6366f1; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+                Verify Email Address
+              </a>
+            </div>
+            
+            <p style="color: #6b7280; font-size: 14px;">
+              Or copy and paste this link into your browser:<br>
+              <a href="${verificationUrl}" style="color: #6366f1; word-break: break-all;">${verificationUrl}</a>
+            </p>
+            
+            <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+              This link will expire in 24 hours. If you didn't create an account with LUNAI, you can safely ignore this email.
+            </p>
+          </div>
+        `,
+      });
+
+      if (error) {
+        console.error('❌ Failed to send verification email:', error);
+        return false;
+      }
+
+      console.log(`📧 Verification email sent to ${user.email}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Error sending verification email:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send email verification success notification
+   */
+  async sendVerificationSuccessEmail(
+    user: { name: string; email: string }
+  ): Promise<boolean> {
+    if (!this.resend) {
+      console.warn('📧 Email service not configured.');
+      return true;
+    }
+
+    try {
+      const { error } = await this.resend.emails.send({
+        from: 'LUNAI <noreply@lunaiapp.com>',
+        to: user.email,
+        subject: '✅ Email verified successfully - LUNAI',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #10b981;">Email Verified Successfully!</h2>
+            
+            <p>Hi ${user.name},</p>
+            
+            <p>Your email address has been verified. You can now access all features of LUNAI.</p>
+            
+            <div style="margin: 30px 0; text-align: center;">
+              <a href="https://lunaiapp.com/login" 
+                 style="background: #6366f1; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+                Sign In to LUNAI
+              </a>
+            </div>
+            
+            <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+              If you didn't verify your email, please contact our support team immediately.
+            </p>
+          </div>
+        `,
+      });
+
+      if (error) {
+        console.error('❌ Failed to send verification success email:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('❌ Error sending verification success email:', error);
+      return false;
+    }
+  }
 }
 
 export const emailService = new EmailService();

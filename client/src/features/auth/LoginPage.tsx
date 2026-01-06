@@ -22,6 +22,8 @@ type LoginForm = {
 export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const navigate = useNavigate();
   const { login } = useAuthStore();
   const { resolvedMode } = useThemeStore();
@@ -42,6 +44,7 @@ export function LoginPage() {
 
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
+    setUnverifiedEmail(null);
     try {
       const response = await authApi.login(data);
       const { user, accessToken, refreshToken } = response.data.data;
@@ -49,9 +52,28 @@ export function LoginPage() {
       toast.success(t('auth.loginSuccess'));
       navigate('/');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || t('auth.loginFailed'));
+      const errorMessage = error.response?.data?.message || t('auth.loginFailed');
+      // Check if error is about unverified email
+      if (errorMessage.toLowerCase().includes('verify') || errorMessage.toLowerCase().includes('verification')) {
+        setUnverifiedEmail(data.email);
+      }
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!unverifiedEmail) return;
+    
+    setResendingVerification(true);
+    try {
+      await authApi.resendVerification(unverifiedEmail);
+      toast.success(t('auth.verificationEmailSent', 'Verification email sent. Please check your inbox.'));
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || t('auth.resendFailed', 'Failed to resend verification email'));
+    } finally {
+      setResendingVerification(false);
     }
   };
 
@@ -153,6 +175,30 @@ export function LoginPage() {
               )}
             </button>
           </form>
+
+          {/* Unverified email message */}
+          {unverifiedEmail && (
+            <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <p className="text-sm text-theme-secondary mb-2">
+                {t('auth.emailNotVerified', 'Please verify your email address before logging in.')}
+              </p>
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resendingVerification}
+                className="text-sm text-primary-400 hover:text-primary-300 font-medium"
+              >
+                {resendingVerification ? (
+                  <>
+                    <CircularProgress size={14} className="inline mr-2" />
+                    {t('auth.sending', 'Sending...')}
+                  </>
+                ) : (
+                  t('auth.resendVerification', 'Resend verification email')
+                )}
+              </button>
+            </div>
+          )}
 
           <p className="text-center text-theme-muted mt-6">
             {t('auth.noAccount')}{' '}

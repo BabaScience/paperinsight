@@ -53,6 +53,7 @@ const envSchema = z.object({
   // Resend (Email)
   RESEND_API_KEY: z.string().optional(),
   ADMIN_EMAIL: z.string().email().optional(),
+  FRONTEND_URL: z.string().url().default('http://localhost:5173'),
   
   // JWT - Enforce strong secrets in production
   JWT_SECRET: z.string()

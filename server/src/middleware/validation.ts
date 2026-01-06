@@ -84,6 +84,18 @@ export const authSchemas = {
       refreshToken: z.string().min(1, 'Refresh token is required'),
     }),
   }),
+
+  verifyEmail: z.object({
+    query: z.object({
+      token: z.string().min(1, 'Verification token is required'),
+    }),
+  }),
+
+  resendVerification: z.object({
+    body: z.object({
+      email: z.string().email('Invalid email address'),
+    }),
+  }),
 };
 
 export const paperSchemas = {

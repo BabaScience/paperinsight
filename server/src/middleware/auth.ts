@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { UnauthorizedError } from '../utils/errors.js';
 import { tokenBlacklistService } from '../services/token-blacklist.service.js';
+import { User } from '../models/user.model.js';
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -53,6 +54,15 @@ export async function authenticate(
       if (isUserRevoked) {
         throw new UnauthorizedError('Session has been invalidated. Please log in again.');
       }
+    }
+
+    // Check if user's email is verified
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      throw new UnauthorizedError('User not found');
+    }
+    if (!user.emailVerified) {
+      throw new UnauthorizedError('Please verify your email address before accessing this resource.');
     }
     
     req.userId = decoded.userId;

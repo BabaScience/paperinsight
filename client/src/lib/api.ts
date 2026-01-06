@@ -190,6 +190,16 @@ api.interceptors.response.use(
     
     // Handle 401 Unauthorized
     if (error.response?.status === 401 && originalRequest) {
+      // Check if it's an email verification error
+      if (errorMessage.toLowerCase().includes('verify') || errorMessage.toLowerCase().includes('verification')) {
+        // Don't clear auth, just redirect to verification page
+        const user = useAuthStore.getState().user;
+        if (user && user.email) {
+          window.location.href = `/verify-email?email=${encodeURIComponent(user.email)}`;
+        }
+        return Promise.reject(error);
+      }
+      
       // Check if it's a token revocation error
       if (isTokenRevocationError(errorMessage)) {
         toast.error(i18n.t('auth.sessionRevoked'), {
@@ -255,6 +265,13 @@ export const authApi = {
   // Logout from all devices (revokes all user sessions)
   logoutAll: () =>
     api.post('/auth/logout-all'),
+  
+  // Email verification
+  verifyEmail: (token: string) =>
+    api.get('/auth/verify-email', { params: { token } }),
+  
+  resendVerification: (email: string) =>
+    api.post('/auth/resend-verification', { email }),
 };
 
 export type PreferredModel = 'openai' | 'deepseek';
