@@ -2,15 +2,30 @@ import 'reflect-metadata';
 import { injectable } from 'inversify';
 import { Resend } from 'resend';
 import { env } from '../config/env.js';
+import { TemplateRendererService } from './email/template-renderer.service.js';
+import {
+  VerificationEmail,
+  VerificationSuccessEmail,
+  TokenExtensionRequest,
+  TokenExtensionApproved,
+} from '../templates/email/index.js';
+import type {
+  VerificationEmailData,
+  VerificationSuccessEmailData,
+  TokenExtensionRequestEmailData,
+  TokenExtensionApprovedEmailData,
+} from './email/types.js';
 
 @injectable()
 export class EmailService {
   private resend: Resend | null = null;
+  private templateRenderer: TemplateRendererService;
 
   constructor() {
     if (env.RESEND_API_KEY) {
       this.resend = new Resend(env.RESEND_API_KEY);
     }
+    this.templateRenderer = new TemplateRendererService();
   }
 
   /**
@@ -39,42 +54,22 @@ export class EmailService {
     }
 
     try {
+      const templateData: TokenExtensionRequestEmailData = {
+        userId: user.id,
+        userName: user.name,
+        userEmail: user.email,
+        currentUsage,
+        currentAllowance,
+        message,
+      };
+
+      const html = this.templateRenderer.renderTemplate(TokenExtensionRequest, templateData);
+
       const { error } = await this.resend.emails.send({
         from: 'LUNAI <noreply@lunaiapp.com>',
         to: env.ADMIN_EMAIL,
         subject: `🔑 Token Extension Request from ${user.name}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #6366f1;">Token Extension Request</h2>
-            
-            <div style="background: #f3f4f6; border-radius: 8px; padding: 20px; margin: 20px 0;">
-              <h3 style="margin-top: 0; color: #374151;">User Details</h3>
-              <p><strong>Name:</strong> ${user.name}</p>
-              <p><strong>Email:</strong> ${user.email}</p>
-              <p><strong>User ID:</strong> <code>${user.id}</code></p>
-            </div>
-            
-            <div style="background: #fef3c7; border-radius: 8px; padding: 20px; margin: 20px 0;">
-              <h3 style="margin-top: 0; color: #92400e;">Token Usage</h3>
-              <p><strong>Current Usage:</strong> ${currentUsage.toLocaleString()} tokens</p>
-              <p><strong>Current Allowance:</strong> ${currentAllowance.toLocaleString()} tokens</p>
-              <p><strong>Usage:</strong> ${((currentUsage / currentAllowance) * 100).toFixed(1)}%</p>
-            </div>
-            
-            ${message ? `
-            <div style="background: #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
-              <h3 style="margin-top: 0; color: #374151;">User's Message</h3>
-              <p style="white-space: pre-wrap;">${message}</p>
-            </div>
-            ` : ''}
-            
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-              <p style="color: #6b7280; font-size: 14px;">
-                To extend this user's token allowance, update their <code>tokenUsage.allowance</code> in the database.
-              </p>
-            </div>
-          </div>
-        `,
+        html,
       });
 
       if (error) {
@@ -103,33 +98,20 @@ export class EmailService {
     }
 
     try {
+      const templateData: TokenExtensionApprovedEmailData = {
+        userName: user.name,
+        userEmail: user.email,
+        newAllowance,
+        appUrl: env.FRONTEND_URL || 'https://lunaiapp.com',
+      };
+
+      const html = this.templateRenderer.renderTemplate(TokenExtensionApproved, templateData);
+
       const { error } = await this.resend.emails.send({
         from: 'LUNAI <noreply@lunaiapp.com>',
         to: user.email,
         subject: '✅ Your token extension request has been approved!',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #10b981;">Good news, ${user.name}!</h2>
-            
-            <p>Your token extension request has been approved.</p>
-            
-            <div style="background: #d1fae5; border-radius: 8px; padding: 20px; margin: 20px 0;">
-              <h3 style="margin-top: 0; color: #065f46;">New Token Allowance</h3>
-              <p style="font-size: 24px; font-weight: bold; color: #059669;">
-                ${newAllowance.toLocaleString()} tokens
-              </p>
-            </div>
-            
-            <p>You can now continue using LUNAI to analyze your research papers.</p>
-            
-            <div style="margin-top: 30px;">
-              <a href="https://lunaiapp.com" 
-                 style="background: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
-                Go to LUNAI
-              </a>
-            </div>
-          </div>
-        `,
+        html,
       });
 
       if (error) {
@@ -168,33 +150,20 @@ export class EmailService {
     const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}`;
 
     try {
+      const templateData: VerificationEmailData = {
+        userName: user.name,
+        userEmail: user.email,
+        verificationUrl,
+        expiresInHours: 24,
+      };
+
+      const html = this.templateRenderer.renderTemplate(VerificationEmail, templateData);
+
       const { error } = await this.resend.emails.send({
         from: 'LUNAI <noreply@lunaiapp.com>',
         to: user.email,
         subject: 'Verify your email address - LUNAI',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #6366f1;">Welcome to LUNAI, ${user.name}!</h2>
-            
-            <p>Thank you for signing up. Please verify your email address to complete your registration and start using LUNAI.</p>
-            
-            <div style="margin: 30px 0; text-align: center;">
-              <a href="${verificationUrl}" 
-                 style="background: #6366f1; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
-                Verify Email Address
-              </a>
-            </div>
-            
-            <p style="color: #6b7280; font-size: 14px;">
-              Or copy and paste this link into your browser:<br>
-              <a href="${verificationUrl}" style="color: #6366f1; word-break: break-all;">${verificationUrl}</a>
-            </p>
-            
-            <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-              This link will expire in 24 hours. If you didn't create an account with LUNAI, you can safely ignore this email.
-            </p>
-          </div>
-        `,
+        html,
       });
 
       if (error) {
@@ -222,30 +191,19 @@ export class EmailService {
     }
 
     try {
+      const templateData: VerificationSuccessEmailData = {
+        userName: user.name,
+        userEmail: user.email,
+        loginUrl: `${env.FRONTEND_URL || 'https://lunaiapp.com'}/login`,
+      };
+
+      const html = this.templateRenderer.renderTemplate(VerificationSuccessEmail, templateData);
+
       const { error } = await this.resend.emails.send({
         from: 'LUNAI <noreply@lunaiapp.com>',
         to: user.email,
         subject: '✅ Email verified successfully - LUNAI',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #10b981;">Email Verified Successfully!</h2>
-            
-            <p>Hi ${user.name},</p>
-            
-            <p>Your email address has been verified. You can now access all features of LUNAI.</p>
-            
-            <div style="margin: 30px 0; text-align: center;">
-              <a href="https://lunaiapp.com/login" 
-                 style="background: #6366f1; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
-                Sign In to LUNAI
-              </a>
-            </div>
-            
-            <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-              If you didn't verify your email, please contact our support team immediately.
-            </p>
-          </div>
-        `,
+        html,
       });
 
       if (error) {
