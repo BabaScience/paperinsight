@@ -213,7 +213,10 @@ export function LoginPage() {
           {/* Google Sign-In Button */}
           <button
             type="button"
-            onClick={() => authApi.googleAuth()}
+            onClick={() => {
+              console.log('Google Sign-In clicked');
+              authApi.googleAuth();
+            }}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-theme-border rounded-lg bg-theme-surface hover:bg-theme-surface-hover transition-colors text-theme-secondary font-medium"
           >
             <GoogleIcon />

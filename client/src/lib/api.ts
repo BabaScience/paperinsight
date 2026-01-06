@@ -276,8 +276,10 @@ export const authApi = {
   // Google OAuth
   googleAuth: () => {
     // Redirect to backend OAuth endpoint
-    const apiUrl = import.meta.env.VITE_API_URL || '';
-    window.location.href = `${apiUrl}/api/auth/google`;
+    // Use API_URL constant which handles both relative and absolute URLs
+    const apiUrl = API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+    const redirectUrl = apiUrl ? `${apiUrl}/api/auth/google` : '/api/auth/google';
+    window.location.href = redirectUrl;
   },
 };
 
