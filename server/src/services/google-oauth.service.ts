@@ -34,9 +34,27 @@ export class GoogleOAuthService {
         this.redirectUri = env.GOOGLE_REDIRECT_URI;
       } else {
         // Default to backend URL based on PORT
-        const protocol = env.NODE_ENV === 'production' ? 'https' : 'http';
-        const host = process.env.API_URL ? new URL(process.env.API_URL).host : `localhost:${env.PORT}`;
-        this.redirectUri = `${protocol}://${host}/api/auth/google/callback`;
+        // In production, use API_URL env var or construct from FRONTEND_URL
+        if (env.NODE_ENV === 'production') {
+          if (process.env.API_URL) {
+            const apiUrl = new URL(process.env.API_URL);
+            this.redirectUri = `${apiUrl.protocol}//${apiUrl.host}/api/auth/google/callback`;
+          } else if (env.FRONTEND_URL) {
+            // If FRONTEND_URL is set, assume API is at api subdomain
+            const frontendUrl = new URL(env.FRONTEND_URL);
+            const apiHost = frontendUrl.host.startsWith('www.') 
+              ? frontendUrl.host.replace('www.', 'api.')
+              : `api.${frontendUrl.host}`;
+            this.redirectUri = `${frontendUrl.protocol}//${apiHost}/api/auth/google/callback`;
+          } else {
+            // Fallback: use https with PORT (unlikely in production)
+            this.redirectUri = `https://localhost:${env.PORT}/api/auth/google/callback`;
+          }
+        } else {
+          // Development: use localhost
+          const host = process.env.API_URL ? new URL(process.env.API_URL).host : `localhost:${env.PORT}`;
+          this.redirectUri = `http://${host}/api/auth/google/callback`;
+        }
       }
       
       console.log(`🔐 Google OAuth Configuration:`);

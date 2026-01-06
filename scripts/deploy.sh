@@ -58,6 +58,13 @@ required_vars=(
     "ADMIN_EMAIL"
 )
 
+# Optional but recommended for Google OAuth
+optional_vars=(
+    "GOOGLE_CLIENT_ID"
+    "GOOGLE_CLIENT_SECRET"
+    "GOOGLE_REDIRECT_URI"
+)
+
 for var in "${required_vars[@]}"; do
     if [ -z "${!var}" ]; then
         log_error "Required environment variable $var is not set"

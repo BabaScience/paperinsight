@@ -79,6 +79,14 @@ sudo nano .env
 | `MINIO_SECRET_KEY` | Strong password for MinIO |
 | `ADMIN_EMAIL` | Email for SSL certificates & notifications |
 
+**Optional (for Google OAuth):**
+
+| Variable | Description |
+|----------|-------------|
+| `GOOGLE_CLIENT_ID` | Google OAuth Client ID from Google Cloud Console |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret from Google Cloud Console |
+| `GOOGLE_REDIRECT_URI` | OAuth redirect URI (defaults to `https://api.${DOMAIN}/api/auth/google/callback`) |
+
 Generate secure secrets:
 ```bash
 openssl rand -base64 64
@@ -146,7 +154,62 @@ docker-compose -f docker-compose.prod.yml down
 git pull
 docker-compose -f docker-compose.prod.yml build --no-cache
 docker-compose -f docker-compose.prod.yml up -d
+```
 
+## Google OAuth Setup
+
+To enable Google authentication in production:
+
+1. **Create OAuth Credentials in Google Cloud Console:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Navigate to **APIs & Services** → **Credentials**
+   - Click **Create Credentials** → **OAuth client ID**
+   - Choose **Web application**
+   - Add authorized redirect URI: `https://api.${DOMAIN}/api/auth/google/callback`
+     - Replace `${DOMAIN}` with your actual domain (e.g., `https://api.lunaiapp.com/api/auth/google/callback`)
+   - Copy the **Client ID** and **Client Secret**
+
+2. **Add to `.env` file:**
+   ```bash
+   GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=your-client-secret
+   GOOGLE_REDIRECT_URI=https://api.yourdomain.com/api/auth/google/callback
+   ```
+   > **Note:** `GOOGLE_REDIRECT_URI` is optional. If not set, it will default to `https://api.${DOMAIN}/api/auth/google/callback`
+
+3. **Rebuild and restart:**
+   ```bash
+   docker-compose -f docker-compose.prod.yml build --no-cache server
+   docker-compose -f docker-compose.prod.yml up -d server
+   ```
+
+4. **Verify configuration:**
+   Check server logs to confirm Google OAuth is configured:
+   ```bash
+   docker-compose -f docker-compose.prod.yml logs server | grep "Google OAuth"
+   ```
+   You should see:
+   ```
+   🔐 Google OAuth Configuration:
+      Client ID: your-client-id...
+      Redirect URI: https://api.yourdomain.com/api/auth/google/callback
+      ⚠️  Make sure this redirect URI is added in Google Cloud Console!
+   ```
+
+5. **Test Google OAuth:**
+   - Visit `https://yourdomain.com/login`
+   - Click "Sign in with Google"
+   - Complete the OAuth flow
+   - Verify you're redirected back and logged in
+
+**Troubleshooting:**
+- If you see `invalid_client` error, verify:
+  - Client ID and Secret match Google Cloud Console
+  - Redirect URI in `.env` matches exactly what's in Google Cloud Console
+  - No trailing slashes in redirect URI
+- Check server logs: `docker-compose -f docker-compose.prod.yml logs -f server`
+
+```bash
 # Access MongoDB shell
 docker exec -it lunai-mongodb mongosh lunai
 

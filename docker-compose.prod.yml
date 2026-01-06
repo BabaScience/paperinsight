@@ -69,12 +69,17 @@ services:
       - USER_TOKEN_ALLOWANCE=${USER_TOKEN_ALLOWANCE:-50000}
       - RESEND_API_KEY=${RESEND_API_KEY}
       - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - FRONTEND_URL=https://${DOMAIN}
+      - API_URL=https://api.${DOMAIN}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
       - JWT_ACCESS_EXPIRY=${JWT_ACCESS_EXPIRY:-15m}
       - JWT_REFRESH_EXPIRY=${JWT_REFRESH_EXPIRY:-7d}
       - MAX_FILE_SIZE=${MAX_FILE_SIZE:-52428800}
       - CORS_ORIGINS=https://${DOMAIN},https://www.${DOMAIN},https://api.${DOMAIN}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-https://api.${DOMAIN}/api/auth/google/callback}
     volumes:
       - server_uploads:/app/uploads
     depends_on:
