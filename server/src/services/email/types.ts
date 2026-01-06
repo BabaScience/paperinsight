@@ -31,3 +31,10 @@ export interface TokenExtensionApprovedEmailData {
   appUrl: string;
 }
 
+export interface WelcomeEmailData {
+  userName: string;
+  userEmail: string;
+  loginUrl: string;
+  appUrl: string;
+}
+

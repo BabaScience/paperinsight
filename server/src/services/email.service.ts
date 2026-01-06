@@ -8,12 +8,14 @@ import {
   VerificationSuccessEmail,
   TokenExtensionRequest,
   TokenExtensionApproved,
+  WelcomeEmail,
 } from '../templates/email/index.js';
 import type {
   VerificationEmailData,
   VerificationSuccessEmailData,
   TokenExtensionRequestEmailData,
   TokenExtensionApprovedEmailData,
+  WelcomeEmailData,
 } from './email/types.js';
 
 @injectable()
@@ -214,6 +216,55 @@ export class EmailService {
       return true;
     } catch (error) {
       console.error('❌ Error sending verification success email:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send welcome email to new user
+   */
+  async sendWelcomeEmail(
+    user: { name: string; email: string }
+  ): Promise<boolean> {
+    if (!this.resend) {
+      console.warn('📧 Email service not configured. Welcome email logged only.');
+      console.log(`
+        ========================================
+        WELCOME EMAIL
+        ========================================
+        User: ${user.name} (${user.email})
+        Welcome to LUNAI!
+        ========================================
+      `);
+      return true;
+    }
+
+    try {
+      const templateData: WelcomeEmailData = {
+        userName: user.name,
+        userEmail: user.email,
+        loginUrl: `${env.FRONTEND_URL || 'https://lunaiapp.com'}/login`,
+        appUrl: env.FRONTEND_URL || 'https://lunaiapp.com',
+      };
+
+      const html = this.templateRenderer.renderTemplate(WelcomeEmail, templateData);
+
+      const { error } = await this.resend.emails.send({
+        from: 'LUNAI <noreply@lunaiapp.com>',
+        to: user.email,
+        subject: 'Welcome to LUNAI! 🎉',
+        html,
+      });
+
+      if (error) {
+        console.error('❌ Failed to send welcome email:', error);
+        return false;
+      }
+
+      console.log(`📧 Welcome email sent to ${user.email}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Error sending welcome email:', error);
       return false;
     }
   }

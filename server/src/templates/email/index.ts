@@ -15,11 +15,14 @@ export { VerificationSuccessEmail } from './verification/VerificationSuccessEmai
 export { TokenExtensionRequest } from './token/TokenExtensionRequest.js';
 export { TokenExtensionApproved } from './token/TokenExtensionApproved.js';
 
+// Welcome template
+export { WelcomeEmail } from './welcome/WelcomeEmail.js';
+
 // Email data types
 export type {
   VerificationEmailData,
   VerificationSuccessEmailData,
   TokenExtensionRequestEmailData,
   TokenExtensionApprovedEmailData,
+  WelcomeEmailData,
 } from '../../services/email/types.js';
-

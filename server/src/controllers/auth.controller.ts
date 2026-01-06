@@ -52,6 +52,12 @@ class AuthController {
         env.FRONTEND_URL
       );
 
+      // Send welcome email
+      await emailService.sendWelcomeEmail({
+        name: user.name,
+        email: user.email,
+      });
+
       res.status(201).json({
         status: 'success',
         message: 'Registration successful. Please check your email to verify your account.',
@@ -437,6 +443,12 @@ class AuthController {
             },
           });
           await user.save();
+
+          // Send welcome email for new Google OAuth users
+          await emailService.sendWelcomeEmail({
+            name: user.name,
+            email: user.email,
+          });
         }
       }
 
