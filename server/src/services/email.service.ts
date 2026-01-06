@@ -40,7 +40,7 @@ export class EmailService {
 
     try {
       const { error } = await this.resend.emails.send({
-        from: 'LUNAI <noreply@lunai.app>',
+        from: 'LUNAI <noreply@lunaiapp.com>',
         to: env.ADMIN_EMAIL,
         subject: `🔑 Token Extension Request from ${user.name}`,
         html: `
@@ -104,7 +104,7 @@ export class EmailService {
 
     try {
       const { error } = await this.resend.emails.send({
-        from: 'LUNAI <noreply@lunai.app>',
+        from: 'LUNAI <noreply@lunaiapp.com>',
         to: user.email,
         subject: '✅ Your token extension request has been approved!',
         html: `
@@ -123,7 +123,7 @@ export class EmailService {
             <p>You can now continue using LUNAI to analyze your research papers.</p>
             
             <div style="margin-top: 30px;">
-              <a href="https://lunai.app" 
+              <a href="https://lunaiapp.com" 
                  style="background: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
                 Go to LUNAI
               </a>
