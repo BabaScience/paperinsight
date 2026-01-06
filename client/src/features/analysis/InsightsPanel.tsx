@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -11,7 +11,8 @@ import {
 } from '@mui/icons-material';
 import { CircularProgress, Tooltip, IconButton } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { papersApi } from '@/lib/api';
+import { papersApi, type TokenUsageInfo } from '@/lib/api';
+import { useTokenLimitModalStore } from '@/stores/tokenLimitModalStore';
 import toast from 'react-hot-toast';
 
 interface InsightsPanelProps {
@@ -36,12 +37,33 @@ export function InsightsPanel({ paperId }: InsightsPanelProps) {
       // Update the cache with the new result
       queryClient.setQueryData(['analysis', paperId], result);
       toast.success(t('insights.regenerateSuccess'));
-    } catch (err) {
-      toast.error(t('insights.regenerateFailed'));
+    } catch (err: any) {
+      // Check for token limit exceeded error
+      const errorCode = err?.response?.data?.code;
+      const tokenUsage = err?.response?.data?.data?.tokenUsage;
+      
+      if (errorCode === 'TOKEN_LIMIT_EXCEEDED' && tokenUsage) {
+        useTokenLimitModalStore.getState().showModal(tokenUsage as TokenUsageInfo);
+      } else {
+        toast.error(t('insights.regenerateFailed'));
+      }
     } finally {
       setIsRegenerating(false);
     }
   };
+
+  // Check for token limit errors in query error
+  useEffect(() => {
+    if (error) {
+      const axiosError = error as any;
+      const errorCode = axiosError?.response?.data?.code;
+      const tokenUsage = axiosError?.response?.data?.data?.tokenUsage;
+      
+      if (errorCode === 'TOKEN_LIMIT_EXCEEDED' && tokenUsage) {
+        useTokenLimitModalStore.getState().showModal(tokenUsage as TokenUsageInfo);
+      }
+    }
+  }, [error]);
 
   if (isLoading) {
     return (

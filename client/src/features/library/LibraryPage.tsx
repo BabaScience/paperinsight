@@ -227,6 +227,11 @@ export function LibraryPage() {
       <Dialog
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, paper: null })}
+        PaperProps={{
+          sx: {
+            backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#6366f1' : '#ffffff',
+          },
+        }}
       >
         <DialogTitle>{t('library.deletePaper')}</DialogTitle>
         <DialogContent>

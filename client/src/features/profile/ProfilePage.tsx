@@ -479,7 +479,7 @@ export function ProfilePage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-background rounded-2xl p-6 max-w-md w-full shadow-xl"
+              className="bg-white dark:bg-primary-500 rounded-2xl p-6 max-w-md w-full shadow-xl"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-lg font-semibold text-foreground mb-2">
@@ -569,7 +569,7 @@ export function ProfilePage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-background rounded-2xl p-6 max-w-md w-full shadow-xl"
+              className="bg-white dark:bg-primary-500 rounded-2xl p-6 max-w-md w-full shadow-xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 mb-4">
@@ -661,7 +661,7 @@ export function ProfilePage() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute z-10 top-full left-0 right-0 mt-1 bg-surface border border-border rounded-xl shadow-xl max-h-48 overflow-y-auto"
+                    className="absolute z-10 top-full left-0 right-0 mt-1 bg-white dark:bg-primary-500 border border-border rounded-xl shadow-xl max-h-48 overflow-y-auto"
                   >
                     {COMMON_RESEARCH_FIELDS.filter(
                       (field) =>

@@ -279,7 +279,7 @@ export function MermaidDiagram({ code, title, description, className = '' }: Mer
             height: '100vh',
             maxWidth: '100vw',
             maxHeight: '100vh',
-            backgroundColor: resolvedMode === 'dark' ? '#1e293b' : '#ffffff',
+            backgroundColor: resolvedMode === 'dark' ? '#6366f1' : '#ffffff',
           },
         }}
       >
@@ -290,7 +290,7 @@ export function MermaidDiagram({ code, title, description, className = '' }: Mer
             flexDirection: 'column',
             height: '100%',
             overflow: 'hidden',
-            backgroundColor: resolvedMode === 'dark' ? '#1e293b' : '#ffffff',
+            backgroundColor: resolvedMode === 'dark' ? '#6366f1' : '#ffffff',
           }}
         >
           {/* Header */}

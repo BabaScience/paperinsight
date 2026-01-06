@@ -373,6 +373,17 @@
     "message": "To get the best experience and personalized AI responses, please complete your profile. Add your research field, expertise level, preferred style, language, and AI model.",
     "goToProfile": "Go to Profile",
     "dismiss": "Dismiss"
+  },
+  "tokenLimitExceeded": {
+    "title": "Token Limit Exceeded",
+    "message": "You've reached your token limit and cannot proceed with this AI operation. Request an extension to continue using AI features, or view your profile to manage your token usage.",
+    "currentUsage": "You've used {{used}} of {{allowance}} tokens",
+    "remaining": "{{remaining}} tokens remaining",
+    "requestExtension": "Request Extension",
+    "viewProfile": "View Profile",
+    "dismiss": "Dismiss",
+    "requestSent": "Extension request sent successfully!",
+    "requestFailed": "Failed to send extension request"
   }
 }
 

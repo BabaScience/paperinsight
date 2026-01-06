@@ -373,6 +373,17 @@
     "message": "Pour obtenir la meilleure expérience et des réponses IA personnalisées, veuillez compléter votre profil. Ajoutez votre domaine de recherche, votre niveau d'expertise, votre style préféré, votre langue et votre modèle IA.",
     "goToProfile": "Aller au profil",
     "dismiss": "Ignorer"
+  },
+  "tokenLimitExceeded": {
+    "title": "Limite de tokens dépassée",
+    "message": "Vous avez atteint votre limite de tokens et ne pouvez pas continuer cette opération IA. Demandez une extension pour continuer à utiliser les fonctionnalités IA, ou consultez votre profil pour gérer votre utilisation de tokens.",
+    "currentUsage": "Vous avez utilisé {{used}} sur {{allowance}} tokens",
+    "remaining": "{{remaining}} tokens restants",
+    "requestExtension": "Demander une extension",
+    "viewProfile": "Voir le profil",
+    "dismiss": "Ignorer",
+    "requestSent": "Demande d'extension envoyée avec succès !",
+    "requestFailed": "Échec de l'envoi de la demande d'extension"
   }
 }
 

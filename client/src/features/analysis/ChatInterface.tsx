@@ -17,9 +17,10 @@ import {
 import { CircularProgress, Tooltip, IconButton } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import { useTranslation } from 'react-i18next';
-import { papersApi } from '@/lib/api';
+import { papersApi, type TokenUsageInfo } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
+import { useTokenLimitModalStore } from '@/stores/tokenLimitModalStore';
 import toast from 'react-hot-toast';
 
 interface ChatInterfaceProps {
@@ -180,6 +181,11 @@ export function ChatInterface({ paperId, paperTitle, isMobile = false, onMessage
                   return newMessages;
                 });
               } else if (data.type === 'error') {
+                // Check for token limit exceeded error
+                if (data.code === 'TOKEN_LIMIT_EXCEEDED' && data.tokenUsage) {
+                  // Show modal with token usage info
+                  useTokenLimitModalStore.getState().showModal(data.tokenUsage as TokenUsageInfo);
+                }
                 throw new Error(data.message);
               }
             } catch (e) {

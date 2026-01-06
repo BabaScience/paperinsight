@@ -18,7 +18,8 @@ import {
 } from '@mui/icons-material';
 import { CircularProgress, Tooltip, Chip, Collapse } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { papersApi } from '@/lib/api';
+import { papersApi, type TokenUsageInfo } from '@/lib/api';
+import { useTokenLimitModalStore } from '@/stores/tokenLimitModalStore';
 import { useProfileStore } from '@/stores/profileStore';
 
 interface ImplementationIdea {
@@ -214,8 +215,17 @@ export function IdeasPanel({ paperId }: IdeasPanelProps) {
       setIdeas(ideasData.ideas || []);
       setUserContext(ideasData.userContext || null);
       setCached(ideasData.cached);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load ideas:', err);
+      
+      // Check for token limit exceeded error
+      const errorCode = err?.response?.data?.code;
+      const tokenUsage = err?.response?.data?.data?.tokenUsage;
+      
+      if (errorCode === 'TOKEN_LIMIT_EXCEEDED' && tokenUsage) {
+        useTokenLimitModalStore.getState().showModal(tokenUsage as TokenUsageInfo);
+      }
+      
       setError(t('ideas.failedToGenerate'));
     } finally {
       setIsLoading(false);

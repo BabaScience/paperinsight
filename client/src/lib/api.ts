@@ -2,6 +2,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import toast from 'react-hot-toast';
 import i18n from './i18n';
 import { useAuthStore } from '@/stores/authStore';
+import { useTokenLimitModalStore } from '@/stores/tokenLimitModalStore';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -154,6 +155,36 @@ api.interceptors.response.use(
         clearRateLimit();
       }, retryAfter - Date.now());
       
+      return Promise.reject(error);
+    }
+    
+    // Handle token limit exceeded (402 Payment Required or TOKEN_LIMIT_EXCEEDED code)
+    const errorCode = (error.response?.data as { code?: string; data?: { tokenUsage?: TokenUsageInfo } })?.code;
+    const tokenUsage = (error.response?.data as { code?: string; data?: { tokenUsage?: TokenUsageInfo } })?.data?.tokenUsage;
+    
+    if (error.response?.status === 402 || errorCode === 'TOKEN_LIMIT_EXCEEDED') {
+      // Show modal with token usage info if available
+      if (tokenUsage) {
+        useTokenLimitModalStore.getState().showModal(tokenUsage);
+      } else {
+        // Fallback: try to get token usage from API
+        try {
+          const usageResponse = await profileApi.getTokenUsage();
+          const usage = usageResponse.data.data.tokenUsage;
+          useTokenLimitModalStore.getState().showModal(usage);
+        } catch {
+          // If we can't get token usage, still show modal with minimal info
+          useTokenLimitModalStore.getState().showModal({
+            used: 0,
+            allowance: 0,
+            remaining: 0,
+            percentageUsed: 100,
+            hasReachedLimit: true,
+            pendingRequest: false,
+          });
+        }
+      }
+      // Don't show generic toast, let modal handle UX
       return Promise.reject(error);
     }
     

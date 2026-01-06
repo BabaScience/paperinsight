@@ -12,7 +12,8 @@ import {
 } from '@mui/icons-material';
 import { CircularProgress, Tooltip } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { papersApi } from '@/lib/api';
+import { papersApi, type TokenUsageInfo } from '@/lib/api';
+import { useTokenLimitModalStore } from '@/stores/tokenLimitModalStore';
 import { MermaidDiagram } from '@/components/MermaidDiagram';
 
 interface DiagramData {
@@ -70,8 +71,17 @@ export function VisualsPanel({ paperId }: VisualsPanelProps) {
       setDiagrams(visuals.diagrams || []);
       setCached(visuals.cached);
       setSelectedDiagram(0);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load visuals:', err);
+      
+      // Check for token limit exceeded error
+      const errorCode = err?.response?.data?.code;
+      const tokenUsage = err?.response?.data?.data?.tokenUsage;
+      
+      if (errorCode === 'TOKEN_LIMIT_EXCEEDED' && tokenUsage) {
+        useTokenLimitModalStore.getState().showModal(tokenUsage as TokenUsageInfo);
+      }
+      
       setError(t('visuals.failedToGenerate'));
     } finally {
       setIsLoading(false);

@@ -39,7 +39,7 @@ export function ProfileCompletionModal({ isOpen, onClose }: ProfileCompletionMod
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="bg-background rounded-2xl shadow-2xl max-w-md w-full pointer-events-auto border border-border"
+              className="bg-white dark:bg-primary-500 rounded-2xl shadow-2xl max-w-md w-full pointer-events-auto border border-border"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}

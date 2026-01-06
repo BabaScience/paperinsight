@@ -112,7 +112,7 @@ export const darkTheme = createTheme({
       styleOverrides: {
         paper: {
           borderRadius: 20,
-          backgroundColor: '#1e293b',
+          backgroundColor: '#6366f1',
           border: '1px solid #334155',
         },
       },

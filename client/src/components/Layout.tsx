@@ -21,6 +21,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { RateLimitBanner } from './RateLimitBanner';
 import { ProfileCompletionModal } from './ProfileCompletionModal';
+import { TokenLimitExceededModal } from './TokenLimitExceededModal';
 import { profileApi, authApi, TokenUsageInfo } from '@/lib/api';
 import { Tooltip, CircularProgress } from '@mui/material';
 import { isProfileComplete } from '@/utils/profileUtils';
@@ -345,6 +346,9 @@ export function Layout() {
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
       />
+      
+      {/* Token Limit Exceeded Modal */}
+      <TokenLimitExceededModal />
       
       {/* Rate Limit Banner */}
       <RateLimitBanner />
