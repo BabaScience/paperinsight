@@ -56,6 +56,18 @@ authRouter.post(
   authController.resendVerificationEmail
 );
 
+// Google OAuth
+authRouter.get(
+  '/google',
+  authController.googleAuth
+);
+
+authRouter.get(
+  '/google/callback',
+  validate(authSchemas.googleCallback),
+  authController.googleCallback
+);
+
 
 
 

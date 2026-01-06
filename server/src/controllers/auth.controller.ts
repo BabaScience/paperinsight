@@ -14,9 +14,16 @@ import {
 } from '../utils/errors.js';
 import { tokenBlacklistService } from '../services/token-blacklist.service.js';
 import { emailService } from '../services/email.service.js';
+import { GoogleOAuthService } from '../services/google-oauth.service.js';
 import crypto from 'crypto';
 
 class AuthController {
+  private googleOAuthService: GoogleOAuthService;
+
+  constructor() {
+    this.googleOAuthService = new GoogleOAuthService();
+  }
+
   async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { email, password, name } = req.body;
@@ -24,6 +31,10 @@ class AuthController {
       // Check if user already exists
       const existingUser = await User.findOne({ email });
       if (existingUser) {
+        // Check if it's a Google account
+        if (existingUser.authProvider === 'google') {
+          throw new ConflictError('An account with this email already exists. Please sign in with Google instead.');
+        }
         throw new ConflictError('Email already registered');
       }
 
@@ -69,6 +80,11 @@ class AuthController {
         throw new UnauthorizedError('Invalid email or password');
       }
 
+      // Check if user is Google-only account
+      if (user.authProvider === 'google' && !user.password) {
+        throw new UnauthorizedError('This account uses Google sign-in. Please sign in with Google instead.');
+      }
+
       // Verify password
       const isValidPassword = await user.comparePassword(password);
       
@@ -76,8 +92,8 @@ class AuthController {
         throw new UnauthorizedError('Invalid email or password');
       }
 
-      // Check if email is verified
-      if (!user.emailVerified) {
+      // Check if email is verified (skip for Google users)
+      if (user.authProvider !== 'google' && !user.emailVerified) {
         throw new UnauthorizedError('Please verify your email address before logging in. Check your inbox for the verification link.');
       }
 
@@ -115,8 +131,8 @@ class AuthController {
         throw new UnauthorizedError('User not found');
       }
 
-      // Check if email is verified
-      if (!user.emailVerified) {
+      // Check if email is verified (skip for Google users)
+      if (user.authProvider !== 'google' && !user.emailVerified) {
         throw new UnauthorizedError('Please verify your email address before accessing this resource.');
       }
 
@@ -321,6 +337,126 @@ class AuthController {
       next(error);
     }
   }
+
+  /**
+   * Initiate Google OAuth flow
+   */
+  googleAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!this.googleOAuthService.isConfigured()) {
+        throw new BadRequestError(
+          'Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.'
+        );
+      }
+
+      // Generate state token for CSRF protection
+      const state = crypto.randomBytes(32).toString('hex');
+      
+      // Store state in session/cookie (optional - can also verify in callback)
+      // For now, we'll include it in the redirect and verify it in callback
+      
+      // Generate Google OAuth URL
+      const authUrl = this.googleOAuthService.getAuthUrl(state);
+      
+      // Redirect to Google
+      res.redirect(authUrl);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Handle Google OAuth callback
+   */
+  googleCallback = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { code, error: oauthError, state } = req.query;
+
+      // Handle OAuth errors
+      if (oauthError) {
+        return res.redirect(`${env.FRONTEND_URL}/login?error=oauth_cancelled`);
+      }
+
+      if (!code || typeof code !== 'string') {
+        return res.redirect(`${env.FRONTEND_URL}/login?error=invalid_code`);
+      }
+
+      if (!this.googleOAuthService.isConfigured()) {
+        return res.redirect(`${env.FRONTEND_URL}/login?error=oauth_not_configured`);
+      }
+
+      // Exchange code for tokens
+      const tokens = await this.googleOAuthService.getTokens(code);
+      
+      // Get user info from Google (using ID token is more secure)
+      const googleUser = await this.googleOAuthService.verifyIdToken(tokens.id_token);
+
+      // Check if user exists by Google ID
+      let user = await User.findOne({ googleId: googleUser.id });
+
+      if (user) {
+        // Existing Google user - login
+        // Update email verified status if needed
+        if (!user.emailVerified) {
+          await User.updateOne({ _id: user._id }, { $set: { emailVerified: true } });
+          user.emailVerified = true;
+        }
+      } else {
+        // Check if user exists by email (auto-link)
+        user = await User.findOne({ email: googleUser.email.toLowerCase() });
+
+        if (user) {
+          // Link Google account to existing account
+          await User.updateOne(
+            { _id: user._id },
+            {
+              $set: {
+                googleId: googleUser.id,
+                authProvider: 'google',
+                emailVerified: true, // Google emails are verified
+              },
+            }
+          );
+          user.googleId = googleUser.id;
+          user.authProvider = 'google';
+          user.emailVerified = true;
+        } else {
+          // Create new user
+          user = new User({
+            email: googleUser.email.toLowerCase(),
+            name: googleUser.name,
+            googleId: googleUser.id,
+            authProvider: 'google',
+            emailVerified: true, // Google emails are pre-verified
+            tokenUsage: {
+              used: 0,
+              allowance: env.USER_TOKEN_ALLOWANCE || 50000,
+              lastResetAt: new Date(),
+              pendingRequest: false,
+              version: 0,
+            },
+          });
+          await user.save();
+        }
+      }
+
+      // Generate JWT tokens
+      const jwtTokens = generateTokens(user._id.toString());
+
+      // Redirect to frontend with tokens in query params
+      // In production, consider using httpOnly cookies instead
+      const redirectUrl = new URL(`${env.FRONTEND_URL}/auth/google/callback`);
+      redirectUrl.searchParams.set('accessToken', jwtTokens.accessToken);
+      redirectUrl.searchParams.set('refreshToken', jwtTokens.refreshToken);
+      redirectUrl.searchParams.set('userId', user._id.toString());
+
+      res.redirect(redirectUrl.toString());
+    } catch (error) {
+      console.error('Google OAuth callback error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.redirect(`${env.FRONTEND_URL}/login?error=${encodeURIComponent(errorMessage)}`);
+    }
+  };
 }
 
 export const authController = new AuthController();

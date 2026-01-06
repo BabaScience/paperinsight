@@ -7,6 +7,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPage } from '@/features/auth/RegisterPage';
 import { EmailVerificationPage } from '@/features/auth/EmailVerificationPage';
+import { GoogleCallbackPage } from '@/features/auth/GoogleCallbackPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { LibraryPage } from '@/features/library/LibraryPage';
 import { UploadPage } from '@/features/upload/UploadPage';
@@ -40,6 +41,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/verify-email" element={<EmailVerificationPage />} />
+      <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
 
       {/* Protected routes */}
       <Route

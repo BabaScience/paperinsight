@@ -31,13 +31,15 @@ export interface ITokenUsage {
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
   email: string;
-  password: string;
+  password?: string;
   name: string;
   profile?: IUserProfile;
   tokenUsage: ITokenUsage;
   emailVerified: boolean;
   emailVerificationToken?: string;
   emailVerificationTokenExpires?: Date;
+  googleId?: string;
+  authProvider?: 'local' | 'google';
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -108,9 +110,33 @@ const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: true,
+      required: false, // Made optional for Google OAuth users
       minlength: 8,
       select: false,
+      validate: {
+        validator: function(this: IUser, value: string | undefined) {
+          // Password required only for local auth
+          if (this.authProvider === 'google' && !value) {
+            return true; // Google users don't need password
+          }
+          if ((this.authProvider === 'local' || !this.authProvider) && (!value || value.length < 8)) {
+            return false; // Local auth requires password
+          }
+          return true;
+        },
+        message: 'Password is required for local authentication and must be at least 8 characters',
+      },
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true, // Allow multiple null values
+      select: false,
+    },
+    authProvider: {
+      type: String,
+      enum: ['local', 'google'],
+      default: 'local',
     },
     name: {
       type: String,
@@ -164,9 +190,9 @@ const userSchema = new Schema<IUser>(
   }
 );
 
-// Hash password before saving
+// Hash password before saving (only if password is provided)
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
   
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
@@ -177,6 +203,9 @@ userSchema.pre('save', async function (next) {
 userSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
+  if (!this.password) {
+    return false;
+  }
   return bcrypt.compare(candidatePassword, this.password);
 };
 
@@ -203,5 +232,8 @@ userSchema.index({ 'tokenUsage.pendingRequest': 1, 'tokenUsage.pendingRequestAt'
 
 // Email verification token index
 userSchema.index({ emailVerificationToken: 1 });
+
+// Google ID index for OAuth lookups
+userSchema.index({ googleId: 1 }, { sparse: true });
 
 export const User = mongoose.model<IUser>('User', userSchema);

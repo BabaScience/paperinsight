@@ -56,12 +56,13 @@ export async function authenticate(
       }
     }
 
-    // Check if user's email is verified
+    // Check if user's email is verified (skip for Google users)
     const user = await User.findById(decoded.userId);
     if (!user) {
       throw new UnauthorizedError('User not found');
     }
-    if (!user.emailVerified) {
+    // Google users are pre-verified by Google, so skip email verification check
+    if (user.authProvider !== 'google' && !user.emailVerified) {
       throw new UnauthorizedError('Please verify your email address before accessing this resource.');
     }
     

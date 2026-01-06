@@ -272,6 +272,13 @@ export const authApi = {
   
   resendVerification: (email: string) =>
     api.post('/auth/resend-verification', { email }),
+  
+  // Google OAuth
+  googleAuth: () => {
+    // Redirect to backend OAuth endpoint
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    window.location.href = `${apiUrl}/api/auth/google`;
+  },
 };
 
 export type PreferredModel = 'openai' | 'deepseek';

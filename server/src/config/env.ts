@@ -55,6 +55,11 @@ const envSchema = z.object({
   ADMIN_EMAIL: z.string().email().optional(),
   FRONTEND_URL: z.string().url().default('http://localhost:5173'),
   
+  // Google OAuth
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_REDIRECT_URI: z.string().url().optional(),
+  
   // JWT - Enforce strong secrets in production
   JWT_SECRET: z.string()
     .min(isProduction ? 64 : 1, 

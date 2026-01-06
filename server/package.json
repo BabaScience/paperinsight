@@ -9,6 +9,7 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
+    "@googleapis/oauth2": "^5.0.1",
     "@langchain/openai": "^0.3.0",
     "@qdrant/js-client-rest": "^1.7.0",
     "bcryptjs": "^2.4.3",
@@ -19,6 +20,7 @@
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^8.2.1",
     "file-type": "^16.5.4",
+    "google-auth-library": "^10.5.0",
     "helmet": "^8.1.0",
     "inversify": "^7.10.8",
     "ioredis": "^5.3.2",
