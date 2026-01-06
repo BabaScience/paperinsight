@@ -93,7 +93,10 @@
     "logoutAllSuccess": "Logged out from all devices successfully",
     "logoutAllConfirm": "Are you sure you want to logout from all devices? You will need to login again on each device.",
     "sessionRevoked": "Your session has been revoked. Please log in again.",
-    "tokenExpired": "Your session has expired. Please log in again."
+    "tokenExpired": "Your session has expired. Please log in again.",
+    "signUpWithGoogle": "Sign up with Google",
+    "signInWithGoogle": "Sign in with Google",
+    "or": "or"
   },
   "dashboard": {
     "title": "Dashboard",

@@ -93,7 +93,10 @@
     "logoutAllSuccess": "Déconnexion de tous les appareils réussie",
     "logoutAllConfirm": "Êtes-vous sûr de vouloir vous déconnecter de tous les appareils ? Vous devrez vous reconnecter sur chaque appareil.",
     "sessionRevoked": "Votre session a été révoquée. Veuillez vous reconnecter.",
-    "tokenExpired": "Votre session a expiré. Veuillez vous reconnecter."
+    "tokenExpired": "Votre session a expiré. Veuillez vous reconnecter.",
+    "signUpWithGoogle": "S'inscrire avec Google",
+    "signInWithGoogle": "Se connecter avec Google",
+    "or": "ou"
   },
   "dashboard": {
     "title": "Tableau de bord",
