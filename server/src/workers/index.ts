@@ -4,7 +4,7 @@ import { processPdfJob } from './pdf.worker.js';
 import { processChunkingJob } from './chunking.worker.js';
 import { processEmbeddingJob } from './embedding.worker.js';
 
-const connection = redis;
+const connection = redis as any;
 
 const workerOptions = {
   connection,

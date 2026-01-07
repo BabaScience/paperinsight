@@ -14,7 +14,7 @@ import { BadRequestError, NotFoundError, ForbiddenError } from '../utils/errors.
 import { fileValidator } from '../middleware/file-validation.js';
 import { withTransaction, withSession } from '../utils/transaction.js';
 
-const pdfQueue = new Queue('pdf-processing', { connection: redis });
+const pdfQueue = new Queue('pdf-processing', { connection: redis as any });
 
 class PaperController {
   async upload(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {

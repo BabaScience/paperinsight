@@ -13,7 +13,7 @@ export interface PdfJobData {
   fileKey: string; // MinIO object key
 }
 
-const chunkingQueue = new Queue('chunking-processing', { connection: redis });
+const chunkingQueue = new Queue('chunking-processing', { connection: redis as any });
 
 
 export async function processPdfJob(job: Job<PdfJobData>): Promise<void> {

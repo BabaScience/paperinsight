@@ -14,7 +14,7 @@ export interface ChunkingJobData {
   sections: Array<{ title: string; content: string; position: number }>;
 }
 
-const embeddingQueue = new Queue('embedding-processing', { connection: redis });
+const embeddingQueue = new Queue('embedding-processing', { connection: redis as any });
 
 export async function processChunkingJob(job: Job<ChunkingJobData>): Promise<void> {
   const { paperId, userId, text, sections } = job.data;
