@@ -483,6 +483,62 @@ class PaperController {
     }
   }
 
+  async regenerateDiagram(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const paperId = req.params.id;
+      const diagramIndex = parseInt(req.body.diagramIndex);
+
+      if (isNaN(diagramIndex) || diagramIndex < 0) {
+        throw new BadRequestError('Valid diagram index is required');
+      }
+
+      // Fetch paper and user profile in parallel
+      const [paper, user] = await Promise.all([
+        Paper.findById(paperId),
+        User.findById(req.userId).select('profile').lean(),
+      ]);
+
+      if (!paper) {
+        throw new NotFoundError('Paper not found');
+      }
+
+      if (paper.userId.toString() !== req.userId) {
+        throw new ForbiddenError('Access denied');
+      }
+
+      if (paper.status !== 'ready') {
+        throw new BadRequestError('Paper is not ready');
+      }
+
+      // Extract user profile for language preference
+      const userProfile = user?.profile;
+
+      const regeneratedDiagram = await ragService.regenerateDiagram(
+        paperId,
+        diagramIndex,
+        userProfile,
+        req.userId
+      );
+
+      res.json({
+        status: 'success',
+        data: { diagram: regeneratedDiagram },
+      });
+    } catch (error) {
+      // Handle token limit exceeded error specially
+      if (error instanceof TokenLimitExceededError) {
+        res.status(402).json({
+          status: 'error',
+          code: 'TOKEN_LIMIT_EXCEEDED',
+          message: error.message,
+          data: { tokenUsage: error.tokenUsage },
+        });
+        return;
+      }
+      next(error);
+    }
+  }
+
   async translateAbstract(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { abstract, targetLanguage } = req.body;

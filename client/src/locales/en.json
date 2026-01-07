@@ -301,6 +301,7 @@
     "generating": "Generating visual diagrams...",
     "analyzingStructure": "AI is analyzing the paper structure",
     "failedToGenerate": "Failed to generate visual diagrams. Please try again.",
+    "failedToRegenerate": "Failed to regenerate diagram. Please try again.",
     "failedTitle": "Failed to generate diagrams",
     "tryAgain": "Try Again",
     "noDiagrams": "No diagrams available",

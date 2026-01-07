@@ -11,6 +11,7 @@ import {
   Fullscreen,
   FullscreenExit,
   Close,
+  Refresh,
 } from '@mui/icons-material';
 import { Tooltip, Dialog, DialogContent, IconButton } from '@mui/material';
 import { useThemeStore } from '@/stores/themeStore';
@@ -20,6 +21,8 @@ interface MermaidDiagramProps {
   title?: string;
   description?: string;
   className?: string;
+  onRegenerate?: () => void;
+  isRegenerating?: boolean;
 }
 
 // Initialize mermaid with default config
@@ -37,7 +40,7 @@ mermaid.initialize({
   },
 });
 
-export function MermaidDiagram({ code, title, description, className = '' }: MermaidDiagramProps) {
+export function MermaidDiagram({ code, title, description, className = '', onRegenerate, isRegenerating = false }: MermaidDiagramProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [svg, setSvg] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -211,7 +214,24 @@ export function MermaidDiagram({ code, title, description, className = '' }: Mer
   if (error) {
     return (
       <div className={`p-4 bg-accent-coral/10 border border-accent-coral/30 rounded-xl ${className}`}>
-        <p className="text-accent-coral text-sm font-medium mb-2">Failed to render diagram</p>
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <p className="text-accent-coral text-sm font-medium">Failed to render diagram</p>
+          {onRegenerate && (
+            <Tooltip title="Regenerate this diagram">
+              <button
+                onClick={onRegenerate}
+                disabled={isRegenerating}
+                className="p-1.5 text-accent-coral hover:bg-accent-coral/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+              >
+                {isRegenerating ? (
+                  <div className="w-4 h-4 border-2 border-accent-coral border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Refresh className="w-4 h-4" />
+                )}
+              </button>
+            </Tooltip>
+          )}
+        </div>
         <pre className="text-xs text-muted overflow-auto max-h-32 bg-surface p-2 rounded">
           {error}
         </pre>

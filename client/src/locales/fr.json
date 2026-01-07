@@ -301,6 +301,7 @@
     "generating": "Génération des diagrammes visuels...",
     "analyzingStructure": "L'IA analyse la structure de l'article",
     "failedToGenerate": "Échec de la génération des diagrammes visuels. Veuillez réessayer.",
+    "failedToRegenerate": "Échec de la régénération du diagramme. Veuillez réessayer.",
     "failedTitle": "Échec de la génération des diagrammes",
     "tryAgain": "Réessayer",
     "noDiagrams": "Aucun diagramme disponible",

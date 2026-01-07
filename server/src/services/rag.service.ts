@@ -923,6 +923,148 @@ Generate 2-3 diagrams that provide different perspectives on the paper's content
   }
 
   /**
+   * Regenerate a single diagram at a specific index
+   */
+  async regenerateDiagram(
+    paperId: string,
+    diagramIndex: number,
+    userProfile?: IUserProfile,
+    userId?: string
+  ): Promise<IMermaidDiagram> {
+    // Get the paper with existing diagrams
+    const paper = await Paper.findById(paperId)
+      .select('title authors abstract sections rawText visuals')
+      .lean();
+
+    if (!paper) {
+      throw new Error('Paper not found');
+    }
+
+    if (!paper.visuals?.diagrams || diagramIndex < 0 || diagramIndex >= paper.visuals.diagrams.length) {
+      throw new Error('Invalid diagram index');
+    }
+
+    const existingDiagram = paper.visuals.diagrams[diagramIndex];
+
+    // OPTIMIZED: Use fewer chunks for single diagram regeneration (5 instead of 15)
+    const chunks = await Chunk.find({ paperId })
+      .sort({ position: 1 })
+      .limit(5)
+      .lean();
+
+    // OPTIMIZED: Use less content (3000 chars instead of 6000)
+    const content = chunks.length > 0 
+      ? chunks.map(c => c.content).join('\n\n')
+      : paper.rawText?.slice(0, 3000) || '';
+
+    // OPTIMIZED: Shorter abstract (first 500 chars instead of full)
+    const abstractSnippet = paper.abstract?.slice(0, 500) || '';
+
+    // OPTIMIZED: Skip sections context for regeneration (not needed for fixing broken diagram)
+    
+    // Build language instruction for diagram text
+    const preferredLang = userProfile?.preferredLanguage?.trim();
+    const useNonEnglish = preferredLang && preferredLang.toLowerCase() !== 'english' && preferredLang.toLowerCase() !== 'en';
+    const languageInstruction = useNonEnglish
+      ? `\n\nLANGUAGE: Use ${preferredLang} for title, description, and all labels. Use English only for node IDs.`
+      : '';
+
+    // OPTIMIZED: Shorter, more focused prompt for single diagram regeneration
+    const prompt = `Regenerate a ${existingDiagram.type} Mermaid diagram for this paper.
+
+Title: ${paper.title}
+Abstract: ${abstractSnippet}${abstractSnippet.length < paper.abstract?.length ? '...' : ''}
+
+Content:
+${content}
+
+Previous diagram (had syntax errors):
+- Type: ${existingDiagram.type}
+- Title: ${existingDiagram.title}
+- Broken code: ${existingDiagram.code.slice(0, 200)}${existingDiagram.code.length > 200 ? '...' : ''}
+
+MERMAID RULES:
+1. No spaces in node IDs (use camelCase: dataCollection)
+2. Wrap special chars in quotes: A["Step 1"]
+3. No HTML tags
+4. Mindmap: 2-space indentation per level
+5. Max 40 chars per label
+
+Return JSON:
+{
+  "type": "${existingDiagram.type}",
+  "title": "Short title",
+  "description": "Brief description",
+  "code": "Valid Mermaid code"
+}${languageInstruction}`;
+
+    // Determine provider and token limit from user profile
+    const provider = userProfile?.preferredModel || env.DEFAULT_LLM_PROVIDER;
+    const maxTokens = Math.max(userProfile?.tokenLimit || env.DEFAULT_TOKEN_LIMIT, 3000);
+
+    // Build messages for accurate token counting
+    const visualMessages = [{ role: 'user' as const, content: prompt }];
+
+    // Check token limit if userId is provided
+    const estimatedTokens = this.estimateMessagesTokens(visualMessages, maxTokens);
+    if (userId) {
+      await this.checkTokenLimit(userId, estimatedTokens);
+    }
+
+    const response = await llmService.chat(provider, {
+      messages: visualMessages,
+      temperature: 0.4,
+      maxTokens,
+    });
+    
+    if (!response) {
+      throw new Error('Failed to regenerate diagram');
+    }
+
+    // Record actual token usage if userId is provided
+    if (userId) {
+      const inputTokens = this.countMessagesTokens(visualMessages);
+      const outputTokens = this.countTokens(response);
+      await tokenService.recordUsage(userId, inputTokens + outputTokens);
+    }
+
+    let parsed: {
+      type: string;
+      title: string;
+      description: string;
+      code: string;
+    };
+
+    try {
+      parsed = JSON.parse(extractJsonFromResponse(response));
+    } catch (parseError) {
+      console.error('❌ Failed to parse diagram JSON response:', response.substring(0, 200));
+      throw new Error('Failed to parse diagram response');
+    }
+
+    // Validate and clean the diagram
+    const regeneratedDiagram: IMermaidDiagram = {
+      type: this.validateDiagramType(parsed.type),
+      title: parsed.title,
+      description: parsed.description,
+      code: this.cleanMermaidCode(parsed.code),
+    };
+
+    // Update the specific diagram in the database
+    const paperDoc = await Paper.findById(paperId);
+    if (!paperDoc || !paperDoc.visuals) {
+      throw new Error('Paper not found or has no visuals');
+    }
+
+    paperDoc.visuals.diagrams[diagramIndex] = regeneratedDiagram;
+    await paperDoc.save();
+
+    console.log(`✅ Diagram ${diagramIndex} regenerated for paper ${paperId}`);
+
+    return regeneratedDiagram;
+  }
+
+  /**
    * Generate personalized implementation ideas based on paper content and user profile
    */
   async getIdeas(

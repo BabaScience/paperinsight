@@ -47,6 +47,7 @@ export function VisualsPanel({ paperId }: VisualsPanelProps) {
   const [diagrams, setDiagrams] = useState<DiagramData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regeneratingDiagramIndex, setRegeneratingDiagramIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cached, setCached] = useState(false);
   const [selectedDiagram, setSelectedDiagram] = useState<number>(0);
@@ -91,6 +92,37 @@ export function VisualsPanel({ paperId }: VisualsPanelProps) {
 
   const handleRegenerate = () => {
     loadVisuals(true);
+  };
+
+  const handleRegenerateDiagram = async (diagramIndex: number) => {
+    try {
+      setRegeneratingDiagramIndex(diagramIndex);
+      setError(null);
+
+      const response = await papersApi.regenerateDiagram(paperId, diagramIndex);
+      const regeneratedDiagram = response.data.data.diagram;
+
+      // Update the specific diagram in the state
+      setDiagrams(prevDiagrams => {
+        const updated = [...prevDiagrams];
+        updated[diagramIndex] = regeneratedDiagram;
+        return updated;
+      });
+    } catch (err: any) {
+      console.error('Failed to regenerate diagram:', err);
+      
+      // Check for token limit exceeded error
+      const errorCode = err?.response?.data?.code;
+      const tokenUsage = err?.response?.data?.data?.tokenUsage;
+      
+      if (errorCode === 'TOKEN_LIMIT_EXCEEDED' && tokenUsage) {
+        useTokenLimitModalStore.getState().showModal(tokenUsage as TokenUsageInfo);
+      }
+      
+      setError(t('visuals.failedToRegenerate'));
+    } finally {
+      setRegeneratingDiagramIndex(null);
+    }
   };
 
   if (isLoading) {
@@ -259,6 +291,8 @@ export function VisualsPanel({ paperId }: VisualsPanelProps) {
             code={currentDiagram.code}
             title={currentDiagram.title}
             description={currentDiagram.description}
+            onRegenerate={() => handleRegenerateDiagram(selectedDiagram)}
+            isRegenerating={regeneratingDiagramIndex === selectedDiagram}
           />
         </motion.div>
       </AnimatePresence>

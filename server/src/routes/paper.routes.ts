@@ -89,6 +89,14 @@ paperRouter.get(
   paperController.getIdeas
 );
 
+// Regenerate a single diagram - rate limited due to AI usage
+paperRouter.post(
+  '/:id/regenerate-diagram',
+  heavyOperationRateLimiter,
+  validateObjectId('id'),
+  paperController.regenerateDiagram
+);
+
 // Translate abstract - rate limited due to AI usage
 paperRouter.post(
   '/:id/translate-abstract',

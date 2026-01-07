@@ -367,6 +367,9 @@ export const papersApi = {
   getVisuals: (id: string, regenerate = false) =>
     api.get(`/papers/${id}/visuals`, { params: regenerate ? { regenerate: 'true' } : {} }),
   
+  regenerateDiagram: (id: string, diagramIndex: number) =>
+    api.post(`/papers/${id}/regenerate-diagram`, { diagramIndex }),
+  
   getIdeas: (id: string, regenerate = false) =>
     api.get(`/papers/${id}/ideas`, { params: regenerate ? { regenerate: 'true' } : {} }),
   
