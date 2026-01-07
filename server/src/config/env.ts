@@ -54,6 +54,7 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   ADMIN_EMAIL: z.string().email().optional(),
   FRONTEND_URL: z.string().url().default('http://localhost:5173'),
+  API_URL: z.string().url().optional(),
   
   // Google OAuth
   GOOGLE_CLIENT_ID: z.string().optional(),
