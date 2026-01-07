@@ -378,29 +378,45 @@ class AuthController {
     try {
       const { code, error: oauthError, state } = req.query;
 
+      console.log('🔐 Google OAuth callback received:', { 
+        hasCode: !!code, 
+        hasError: !!oauthError, 
+        error: oauthError,
+        state 
+      });
+
       // Handle OAuth errors
       if (oauthError) {
+        console.error('❌ OAuth error from Google:', oauthError);
         return res.redirect(`${env.FRONTEND_URL}/login?error=oauth_cancelled`);
       }
 
       if (!code || typeof code !== 'string') {
+        console.error('❌ Missing or invalid authorization code');
         return res.redirect(`${env.FRONTEND_URL}/login?error=invalid_code`);
       }
 
       if (!this.googleOAuthService.isConfigured()) {
+        console.error('❌ Google OAuth not configured');
         return res.redirect(`${env.FRONTEND_URL}/login?error=oauth_not_configured`);
       }
 
+      console.log('🔄 Exchanging authorization code for tokens...');
       // Exchange code for tokens
       const tokens = await this.googleOAuthService.getTokens(code);
+      console.log('✅ Tokens received successfully');
       
+      console.log('🔄 Verifying ID token...');
       // Get user info from Google (using ID token is more secure)
       const googleUser = await this.googleOAuthService.verifyIdToken(tokens.id_token);
+      console.log('✅ ID token verified, user:', { id: googleUser.id, email: googleUser.email, name: googleUser.name });
 
       // Check if user exists by Google ID
+      console.log('🔄 Checking for existing user with Google ID:', googleUser.id);
       let user = await User.findOne({ googleId: googleUser.id });
 
       if (user) {
+        console.log('✅ Found existing Google user:', user.email);
         // Existing Google user - login
         // Update email verified status if needed
         if (!user.emailVerified) {
@@ -409,9 +425,11 @@ class AuthController {
         }
       } else {
         // Check if user exists by email (auto-link)
+        console.log('🔄 Checking for existing user with email:', googleUser.email.toLowerCase());
         user = await User.findOne({ email: googleUser.email.toLowerCase() });
 
         if (user) {
+          console.log('✅ Found existing user, linking Google account');
           // Link Google account to existing account
           await User.updateOne(
             { _id: user._id },
@@ -427,6 +445,7 @@ class AuthController {
           user.authProvider = 'google';
           user.emailVerified = true;
         } else {
+          console.log('🆕 Creating new user');
           // Create new user
           user = new User({
             email: googleUser.email.toLowerCase(),
@@ -443,17 +462,32 @@ class AuthController {
             },
           });
           await user.save();
+          console.log('✅ New user created:', user.email);
 
           // Send welcome email for new Google OAuth users
-          await emailService.sendWelcomeEmail({
-            name: user.name,
-            email: user.email,
-          });
+          try {
+            await emailService.sendWelcomeEmail({
+              name: user.name,
+              email: user.email,
+            });
+            console.log('✅ Welcome email sent');
+          } catch (emailError) {
+            console.error('⚠️ Failed to send welcome email (non-critical):', emailError);
+            // Don't fail the OAuth flow if email fails
+          }
         }
       }
 
+      console.log('🔄 Generating JWT tokens...');
       // Generate JWT tokens
       const jwtTokens = generateTokens(user._id.toString());
+      console.log('✅ JWT tokens generated');
+
+      // Validate FRONTEND_URL is set
+      if (!env.FRONTEND_URL) {
+        console.error('❌ FRONTEND_URL is not set in environment variables');
+        throw new Error('FRONTEND_URL environment variable is not configured');
+      }
 
       // Redirect to frontend with tokens in query params
       // In production, consider using httpOnly cookies instead
@@ -462,11 +496,22 @@ class AuthController {
       redirectUrl.searchParams.set('refreshToken', jwtTokens.refreshToken);
       redirectUrl.searchParams.set('userId', user._id.toString());
 
+      console.log('✅ Redirecting to frontend:', redirectUrl.toString());
+      console.log('✅ Frontend URL from env:', env.FRONTEND_URL);
       res.redirect(redirectUrl.toString());
     } catch (error) {
-      console.error('Google OAuth callback error:', error);
+      console.error('❌ Google OAuth callback error:', error);
+      if (error instanceof Error) {
+        console.error('❌ Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        });
+      }
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      res.redirect(`${env.FRONTEND_URL}/login?error=${encodeURIComponent(errorMessage)}`);
+      const encodedError = encodeURIComponent(errorMessage);
+      console.error('❌ Redirecting to login with error:', encodedError);
+      res.redirect(`${env.FRONTEND_URL}/login?error=${encodedError}`);
     }
   };
 }
