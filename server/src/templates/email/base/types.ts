@@ -13,3 +13,4 @@ export interface BaseEmailTemplateProps {
   previewText?: string;
 }
 
+

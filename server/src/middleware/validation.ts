@@ -121,6 +121,16 @@ export const paperSchemas = {
       id: mongoIdSchema,
     }),
   }),
+
+  translateAbstract: z.object({
+    body: z.object({
+      abstract: z.string().min(1, 'Abstract is required').max(5000),
+      targetLanguage: z.string().min(1, 'Target language is required').max(100),
+    }),
+    params: z.object({
+      id: mongoIdSchema,
+    }),
+  }),
 };
 
 // Profile validation schemas

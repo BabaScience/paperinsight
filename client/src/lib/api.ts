@@ -369,6 +369,9 @@ export const papersApi = {
   
   getIdeas: (id: string, regenerate = false) =>
     api.get(`/papers/${id}/ideas`, { params: regenerate ? { regenerate: 'true' } : {} }),
+  
+  translateAbstract: (id: string, abstract: string, targetLanguage: string) =>
+    api.post(`/papers/${id}/translate-abstract`, { abstract, targetLanguage }),
 };
 
 

@@ -12,14 +12,14 @@ import {
   Error,
   Pending,
   ExpandMore,
-  ExpandLess,
-  Article,
   KeyboardArrowDown,
   Chat,
   BubbleChart,
   Lightbulb,
+  Article,
+  AutoAwesome,
 } from '@mui/icons-material';
-import { Chip, CircularProgress, Tabs, Tab, Collapse } from '@mui/material';
+import { Chip, CircularProgress, Tabs, Tab } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { papersApi } from '@/lib/api';
 import { ChatInterface } from './ChatInterface';
@@ -33,80 +33,21 @@ import {
   onProcessingComplete,
 } from '@/lib/socket';
 import { useThemeStore } from '@/stores/themeStore';
+import { useProfileStore } from '@/stores/profileStore';
 
-interface Section {
-  title: string;
-  content: string;
-  position: number;
-}
-
-function SectionCard({ section, index }: { section: Section; index: number }) {
-  const [expanded, setExpanded] = useState(false);
-  const previewLength = 200;
-  const hasMoreContent = section.content.length > previewLength;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-      className="bg-surface/50 border border-border/50 rounded-xl overflow-hidden hover:border-primary-500/30 transition-colors"
-    >
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full p-4 flex items-center justify-between text-left hover:bg-surface/50 transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-400 font-medium text-sm">
-            {index + 1}
-          </div>
-          <h4 className="font-medium text-foreground">
-            {section.title}
-          </h4>
-        </div>
-        {hasMoreContent && (
-          expanded ? (
-            <ExpandLess className="text-muted" />
-          ) : (
-            <ExpandMore className="text-muted" />
-          )
-        )}
-      </button>
-      
-      <Collapse in={expanded || !hasMoreContent}>
-        <div className="px-4 pb-4">
-          <p className="text-sm text-muted leading-relaxed whitespace-pre-wrap">
-            {section.content}
-          </p>
-        </div>
-      </Collapse>
-      
-      {!expanded && hasMoreContent && (
-        <div className="px-4 pb-4">
-          <p className="text-sm text-muted leading-relaxed">
-            {section.content.slice(0, previewLength)}...
-          </p>
-          <button
-            onClick={() => setExpanded(true)}
-            className="text-primary-400 text-sm mt-2 hover:text-primary-300"
-          >
-            Read more
-          </button>
-        </div>
-      )}
-    </motion.div>
-  );
-}
 
 export function AnalysisPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { resolvedMode } = useThemeStore();
+  const { profile } = useProfileStore();
   const [activeTab, setActiveTab] = useState(0);
   const [processingMessage, setProcessingMessage] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messageCount, setMessageCount] = useState(0);
+  const [translatedAbstract, setTranslatedAbstract] = useState<string | null>(null);
+  const [isTranslatingAbstract, setIsTranslatingAbstract] = useState(false);
 
   // For swipe-to-close gesture
   const y = useMotionValue(0);
@@ -163,6 +104,41 @@ export function AnalysisPage() {
     }
   };
 
+  // Translate abstract if user has preferred language set
+  // This hook must be called before any conditional returns to follow Rules of Hooks
+  useEffect(() => {
+    if (id && paper?.abstract && profile?.preferredLanguage && profile.preferredLanguage.toLowerCase() !== 'english') {
+      const normalizedLanguage = profile.preferredLanguage.toLowerCase();
+      
+      // Check if translation already exists in cache
+      if (paper.translatedAbstracts && paper.translatedAbstracts[normalizedLanguage]) {
+        setTranslatedAbstract(paper.translatedAbstracts[normalizedLanguage]);
+        return;
+      }
+
+      // Request translation if not cached
+      setIsTranslatingAbstract(true);
+      papersApi.translateAbstract(id, paper.abstract, profile.preferredLanguage)
+        .then((response) => {
+          setTranslatedAbstract(response.data.data.translatedText);
+          // Refetch paper to update cache with new translation
+          if (!response.data.data.cached) {
+            refetch();
+          }
+        })
+        .catch((error) => {
+          console.error('Failed to translate abstract:', error);
+          // Fallback to original abstract on error
+          setTranslatedAbstract(null);
+        })
+        .finally(() => {
+          setIsTranslatingAbstract(false);
+        });
+    } else {
+      setTranslatedAbstract(null);
+    }
+  }, [id, paper?.abstract, paper?.translatedAbstracts, profile?.preferredLanguage]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-3rem)]">
@@ -196,8 +172,6 @@ export function AnalysisPage() {
       day: 'numeric',
     });
   };
-
-  const sections = paper.sections || [];
 
   return (
     <div className="h-[calc(100vh-5rem)] lg:h-[calc(100vh-3rem)] flex flex-col overflow-hidden">
@@ -341,7 +315,7 @@ export function AnalysisPage() {
       {/* Main Content - Scrollable */}
       {isReady && (
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-          {/* Left Panel - Insights/Sections (Full width on mobile, half on desktop) */}
+          {/* Left Panel - Insights/Visuals/Ideas (Full width on mobile, half on desktop) */}
           <div className="card flex flex-col min-h-0 overflow-hidden">
             <Tabs
               value={activeTab}
@@ -357,16 +331,11 @@ export function AnalysisPage() {
                 },
               }}
             >
-              <Tab label={t('analysis.tabs.insights')} />
               <Tab 
                 label={
                   <span className="flex items-center gap-1.5">
-                    {t('analysis.tabs.sections')}
-                    {sections.length > 0 && (
-                      <span className="px-1.5 py-0.5 bg-primary-500/20 text-primary-400 text-xs rounded-full">
-                        {sections.length}
-                      </span>
-                    )}
+                    <AutoAwesome className="w-4 h-4" />
+                    {t('analysis.tabs.insights')}
                   </span>
                 } 
               />
@@ -402,31 +371,6 @@ export function AnalysisPage() {
                 )}
                 {activeTab === 1 && (
                   <motion.div
-                    key="sections"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 10 }}
-                    className="space-y-3"
-                  >
-                    {sections.length > 0 ? (
-                      sections.map((section: Section, idx: number) => (
-                        <SectionCard key={idx} section={section} index={idx} />
-                      ))
-                    ) : (
-                      <div className="text-center py-12">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-surface/50 flex items-center justify-center">
-                          <Article className="text-muted text-3xl" />
-                        </div>
-                        <p className="text-muted font-medium mb-2">{t('sections.noSections')}</p>
-                        <p className="text-sm text-muted max-w-xs mx-auto">
-                          {t('sections.noSectionsDescription')}
-                        </p>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-                {activeTab === 2 && (
-                  <motion.div
                     key="visuals"
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -435,7 +379,7 @@ export function AnalysisPage() {
                     <VisualsPanel paperId={id!} />
                   </motion.div>
                 )}
-                {activeTab === 3 && (
+                {activeTab === 2 && (
                   <motion.div
                     key="ideas"
                     initial={{ opacity: 0, x: -10 }}
@@ -455,10 +399,22 @@ export function AnalysisPage() {
                   <summary className="cursor-pointer text-sm font-medium text-foreground flex items-center gap-2">
                     <ExpandMore className="w-4 h-4 transition-transform group-open:rotate-180" />
                     {t('analysis.abstract')}
+                    {isTranslatingAbstract && (
+                      <CircularProgress size={14} className="ml-2" />
+                    )}
                   </summary>
-                  <p className="text-sm text-muted leading-relaxed mt-2 pl-6">
-                    {paper.abstract}
-                  </p>
+                  <div className="mt-2 pl-6 max-h-64 overflow-y-auto scrollbar-thin">
+                    {isTranslatingAbstract ? (
+                      <div className="flex items-center gap-2 text-sm text-muted">
+                        <CircularProgress size={16} />
+                        <span>{t('analysis.translating')}</span>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted leading-relaxed pr-2">
+                        {translatedAbstract || paper.abstract}
+                      </p>
+                    )}
+                  </div>
                 </details>
               </div>
             )}

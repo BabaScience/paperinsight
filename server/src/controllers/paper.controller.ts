@@ -482,6 +482,97 @@ class PaperController {
       next(error);
     }
   }
+
+  async translateAbstract(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { abstract, targetLanguage } = req.body;
+      const paperId = req.params.id;
+
+      if (!abstract || !targetLanguage) {
+        throw new BadRequestError('Abstract and target language are required');
+      }
+
+      // Fetch paper to check for cached translation
+      const paper = await Paper.findById(paperId);
+
+      if (!paper) {
+        throw new NotFoundError('Paper not found');
+      }
+
+      if (paper.userId.toString() !== req.userId) {
+        throw new ForbiddenError('Access denied');
+      }
+
+      // Normalize language code (lowercase)
+      const normalizedLanguage = targetLanguage.toLowerCase();
+
+      // Check if translation already exists in cache
+      // Handle both Map (from Mongoose document) and plain object (from .lean())
+      let cachedTranslation: string | undefined;
+      if (paper.translatedAbstracts) {
+        if (paper.translatedAbstracts instanceof Map) {
+          cachedTranslation = paper.translatedAbstracts.get(normalizedLanguage);
+        } else {
+          // Plain object from .lean() or default initialization
+          cachedTranslation = (paper.translatedAbstracts as Record<string, string>)[normalizedLanguage];
+        }
+      }
+
+      if (cachedTranslation) {
+        res.json({
+          status: 'success',
+          data: { 
+            translatedText: cachedTranslation,
+            cached: true,
+          },
+        });
+        return;
+      }
+
+      // Fetch user profile for model preference
+      const user = await User.findById(req.userId).select('profile').lean();
+      const userProfile = user?.profile;
+
+      // Translate abstract
+      const translatedText = await ragService.translateAbstract(
+        abstract, 
+        targetLanguage, 
+        userProfile, 
+        req.userId
+      );
+
+      // Save translation to database
+      // Initialize as Map if it doesn't exist or is a plain object
+      if (!paper.translatedAbstracts || !(paper.translatedAbstracts instanceof Map)) {
+        const existingTranslations = paper.translatedAbstracts 
+          ? (paper.translatedAbstracts as Record<string, string>)
+          : {};
+        paper.translatedAbstracts = new Map(Object.entries(existingTranslations));
+      }
+      paper.translatedAbstracts.set(normalizedLanguage, translatedText);
+      await paper.save();
+
+      res.json({
+        status: 'success',
+        data: { 
+          translatedText,
+          cached: false,
+        },
+      });
+    } catch (error) {
+      // Handle token limit exceeded error specially
+      if (error instanceof TokenLimitExceededError) {
+        res.status(402).json({
+          status: 'error',
+          code: 'TOKEN_LIMIT_EXCEEDED',
+          message: error.message,
+          data: { tokenUsage: error.tokenUsage },
+        });
+        return;
+      }
+      next(error);
+    }
+  }
 }
 
 export const paperController = new PaperController();

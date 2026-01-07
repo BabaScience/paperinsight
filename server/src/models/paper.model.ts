@@ -68,6 +68,7 @@ export interface IPaper extends Document {
   analysis?: IPaperAnalysis;
   visuals?: IPaperVisuals;
   ideas?: IPaperIdeas;
+  translatedAbstracts?: Map<string, string>; // Map of language code to translated abstract
   status: PaperStatus;
   processingSteps: {
     parsing: ProcessingStepStatus;
@@ -134,6 +135,11 @@ const paperSchema = new Schema<IPaper>(
       methodology: String,
       limitations: String,
       generatedAt: Date,
+    },
+    translatedAbstracts: {
+      type: Map,
+      of: String,
+      default: {},
     },
     visuals: {
       diagrams: [{

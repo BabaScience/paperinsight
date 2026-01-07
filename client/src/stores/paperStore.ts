@@ -16,6 +16,7 @@ export interface Paper {
   };
   chunkCount?: number;
   pageCount?: number;
+  translatedAbstracts?: Record<string, string>; // Map of language code to translated abstract
   error?: string;
   createdAt: string;
   updatedAt: string;
@@ -100,6 +101,7 @@ export const usePaperStore = create<PaperState>((set) => ({
       return { processingStatus: rest };
     }),
 }));
+
 
 
 

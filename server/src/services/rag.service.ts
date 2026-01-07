@@ -1170,6 +1170,59 @@ ${!userProfile || Object.keys(userProfile).length === 0
   async regenerateIdeas(paperId: string, userProfile?: IUserProfile, userId?: string): Promise<IdeasResult> {
     return this.getIdeas(paperId, userProfile, true, userId);
   }
+
+  /**
+   * Translate abstract to user's preferred language
+   */
+  async translateAbstract(
+    abstract: string,
+    targetLanguage: string,
+    userProfile?: IUserProfile,
+    userId?: string
+  ): Promise<string> {
+    // Determine provider and token limit from user profile
+    const provider = userProfile?.preferredModel === 'deepseek' ? 'deepseek' : 'openai';
+    const maxTokens = userProfile?.tokenLimit || env.DEFAULT_TOKEN_LIMIT;
+
+    const prompt = `Translate the following research paper abstract to ${targetLanguage}. 
+Maintain the technical accuracy and preserve all scientific terminology. 
+Do not add any explanations or additional text - only provide the translation.
+
+Abstract to translate:
+${abstract}
+
+Translation in ${targetLanguage}:`;
+
+    // Build messages for accurate token counting
+    const messages = [{ role: 'user' as const, content: prompt }];
+
+    // Check token limit if userId is provided (using accurate token counting)
+    const estimatedTokens = this.estimateMessagesTokens(messages, maxTokens);
+    if (userId) {
+      await this.checkTokenLimit(userId, estimatedTokens);
+    }
+
+    const response = await llmService.chat(provider, {
+      messages,
+      temperature: 0.3,
+      maxTokens,
+    });
+
+    if (!response) {
+      throw new Error('Failed to translate abstract');
+    }
+
+    // Record actual token usage if userId is provided
+    if (userId) {
+      const inputTokens = this.countMessagesTokens(messages);
+      const outputTokens = this.countTokens(response);
+      await tokenService.recordUsage(userId, inputTokens + outputTokens);
+    }
+
+    // Extract translation from response
+    const translatedText = response.trim();
+    return translatedText;
+  }
 }
 
 export const ragService = new RagService();

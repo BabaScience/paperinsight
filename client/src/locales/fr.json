@@ -252,7 +252,8 @@
       "ideas": "Idées"
     },
     "abstract": "Résumé",
-    "askAI": "Demander à l'IA"
+    "askAI": "Demander à l'IA",
+    "translating": "Traduction en cours..."
   },
   "insights": {
     "generating": "Génération des insights...",

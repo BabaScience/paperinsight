@@ -89,6 +89,15 @@ paperRouter.get(
   paperController.getIdeas
 );
 
+// Translate abstract - rate limited due to AI usage
+paperRouter.post(
+  '/:id/translate-abstract',
+  heavyOperationRateLimiter,
+  validateObjectId('id'),
+  validate(paperSchemas.translateAbstract),
+  paperController.translateAbstract
+);
+
 
 
 
