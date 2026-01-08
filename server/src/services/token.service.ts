@@ -54,10 +54,23 @@ export class TokenService {
     // Ensure token usage is initialized first
     await this.ensureTokenUsageInitialized(userId);
 
-    const user = await User.findById(userId).select('tokenUsage').lean();
+    const user = await User.findById(userId).select('tokenUsage isAdmin').lean();
     
     if (!user) {
       throw new Error('User not found');
+    }
+
+    // Admin users have unlimited tokens
+    if (user.isAdmin) {
+      const used = user.tokenUsage?.used ?? 0;
+      return {
+        used,
+        allowance: Number.MAX_SAFE_INTEGER,
+        remaining: Number.MAX_SAFE_INTEGER,
+        percentageUsed: 0,
+        hasReachedLimit: false,
+        pendingRequest: false,
+      };
     }
 
     const used = user.tokenUsage?.used ?? 0;
@@ -79,6 +92,17 @@ export class TokenService {
    * Check if user has enough tokens for an operation
    */
   async canUseTokens(userId: string, requiredTokens: number): Promise<{ allowed: boolean; info: TokenUsageInfo }> {
+    const user = await User.findById(userId).select('isAdmin').lean();
+    
+    // Admin users always allowed
+    if (user?.isAdmin) {
+      const info = await this.getUsageInfo(userId);
+      return {
+        allowed: true,
+        info,
+      };
+    }
+
     const info = await this.getUsageInfo(userId);
     return {
       allowed: info.remaining >= requiredTokens,
@@ -89,6 +113,7 @@ export class TokenService {
   /**
    * Record token usage for a user with optimistic locking
    * Uses version field to prevent race conditions
+   * Admin users still tracked but not enforced
    */
   async recordUsage(userId: string, tokensUsed: number): Promise<TokenUsageInfo> {
     const MAX_RETRIES = 3;
@@ -96,6 +121,10 @@ export class TokenService {
 
     // Ensure token usage is initialized first
     await this.ensureTokenUsageInitialized(userId);
+
+    // Check if user is admin
+    const userCheck = await User.findById(userId).select('isAdmin').lean();
+    const isAdmin = userCheck?.isAdmin ?? false;
 
     while (retries < MAX_RETRIES) {
       const user = await User.findById(userId).select('tokenUsage').lean();
@@ -127,6 +156,18 @@ export class TokenService {
         const allowance = result.tokenUsage?.allowance ?? DEFAULT_ALLOWANCE;
         const pendingRequest = result.tokenUsage?.pendingRequest ?? false;
         const remaining = Math.max(0, allowance - used);
+
+        if (isAdmin) {
+          console.log(`📊 Token usage recorded (admin): +${tokensUsed} for user ${userId} (${used} total)`);
+          return {
+            used,
+            allowance: Number.MAX_SAFE_INTEGER,
+            remaining: Number.MAX_SAFE_INTEGER,
+            percentageUsed: 0,
+            hasReachedLimit: false,
+            pendingRequest,
+          };
+        }
 
         console.log(`📊 Token usage recorded: +${tokensUsed} for user ${userId} (${used}/${allowance})`);
 

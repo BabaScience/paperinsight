@@ -55,6 +55,7 @@ export function GoogleCallbackPage() {
             email: userData.email,
             name: userData.name,
             emailVerified: userData.emailVerified,
+            isAdmin: userData.isAdmin || false,
             profile: userData.profile,
           };
 

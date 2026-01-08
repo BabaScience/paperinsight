@@ -10,6 +10,7 @@ import {
   Person,
   Token,
   Close,
+  AdminPanelSettings,
 } from '@mui/icons-material';
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -221,6 +222,32 @@ export function Layout() {
               </NavLink>
             </li>
           ))}
+          {user?.isAdmin && (
+            <li>
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 touch-manipulation
+                  ${
+                    isActive
+                      ? 'bg-yellow-600/20 text-yellow-400 border border-yellow-500/30'
+                      : 'text-theme-secondary hover:bg-yellow-500/10 hover:text-yellow-400 active:bg-yellow-500/10'
+                  }`
+                }
+              >
+                <AdminPanelSettings className="w-5 h-5 flex-shrink-0" />
+                {(sidebarOpen || isMobile) && (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="font-medium whitespace-nowrap"
+                  >
+                    {t('nav.admin')}
+                  </motion.span>
+                )}
+              </NavLink>
+            </li>
+          )}
         </ul>
       </nav>
 

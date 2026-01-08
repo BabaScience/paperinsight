@@ -52,7 +52,7 @@ const envSchema = z.object({
   
   // Resend (Email)
   RESEND_API_KEY: z.string().optional(),
-  ADMIN_EMAIL: z.string().email().optional(),
+  ADMIN_EMAIL: z.string().email().default('contact.lunai.studio@gmail.com'),
   FRONTEND_URL: z.string().url().default('http://localhost:5173'),
   API_URL: z.string().url().optional(),
   

@@ -17,6 +17,7 @@ import { authRateLimiter, apiRateLimiter } from './middleware/rate-limit.js';
 import { authRouter } from './routes/auth.routes.js';
 import { paperRouter } from './routes/paper.routes.js';
 import { profileRouter } from './routes/profile.routes.js';
+import { adminRouter } from './routes/admin.routes.js';
 import { setupSocketHandlers } from './socket/index.js';
 import { initializeWorkers } from './workers/index.js';
 
@@ -96,6 +97,7 @@ app.get('/health', (_req, res) => {
 app.use('/api/auth', authRateLimiter, authRouter);
 app.use('/api/papers', apiRateLimiter, paperRouter);
 app.use('/api/profile', apiRateLimiter, profileRouter);
+app.use('/api/admin', adminRouter); // Admin routes have their own rate limiting logic
 
 // Error handling
 app.use(notFoundHandler);

@@ -49,6 +49,7 @@
     "library": "Library",
     "upload": "Upload",
     "profile": "Profile",
+    "admin": "Admin",
     "logout": "Logout",
     "tokens": "Tokens",
     "tokensLeft": "{{value}}k left"
@@ -389,6 +390,37 @@
     "dismiss": "Dismiss",
     "requestSent": "Extension request sent successfully!",
     "requestFailed": "Failed to send extension request"
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Admin Dashboard",
+      "subtitle": "Monitor system performance and user activity"
+    },
+    "stats": {
+      "totalUsers": "Total Users",
+      "totalPapers": "Total Papers",
+      "totalTokens": "Total Tokens Used",
+      "systemHealth": "System Health",
+      "activeLast30Days": "active last 30 days",
+      "last30Days": "last 30 days",
+      "avgPerUser": "avg per user"
+    },
+    "charts": {
+      "userGrowth": "User Growth",
+      "papersByStatus": "Papers by Status",
+      "tokenUsage": "Token Usage Over Time",
+      "topUsers": "Top Users by Token Usage",
+      "noData": "No data available"
+    },
+    "health": {
+      "title": "System Health",
+      "database": "Database",
+      "redis": "Redis",
+      "uptime": "Uptime",
+      "latency": "latency",
+      "healthy": "Healthy",
+      "degraded": "Degraded"
+    }
   }
 }
 

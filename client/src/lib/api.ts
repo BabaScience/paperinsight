@@ -377,7 +377,18 @@ export const papersApi = {
     api.post(`/papers/${id}/translate-abstract`, { abstract, targetLanguage }),
 };
 
-
-
-
+export const adminApi = {
+  getStats: () => api.get('/admin/stats'),
+  
+  getUsers: (days?: number) =>
+    api.get('/admin/users', { params: days ? { days } : {} }),
+  
+  getPapers: (days?: number) =>
+    api.get('/admin/papers', { params: days ? { days } : {} }),
+  
+  getTokens: (days?: number) =>
+    api.get('/admin/tokens', { params: days ? { days } : {} }),
+  
+  getHealth: () => api.get('/admin/health'),
+};
 

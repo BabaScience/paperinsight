@@ -277,6 +277,7 @@ export class RagService {
 
   /**
    * Check token limit and throw if exceeded
+   * Admin users automatically bypass this check via TokenService
    */
   private async checkTokenLimit(userId: string, estimatedTokens: number): Promise<void> {
     const { allowed, info } = await tokenService.canUseTokens(userId, estimatedTokens);

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
 import { Layout } from '@/components/Layout';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { AdminRoute } from '@/components/AdminRoute';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPage } from '@/features/auth/RegisterPage';
 import { EmailVerificationPage } from '@/features/auth/EmailVerificationPage';
@@ -13,6 +14,7 @@ import { LibraryPage } from '@/features/library/LibraryPage';
 import { UploadPage } from '@/features/upload/UploadPage';
 import { AnalysisPage } from '@/features/analysis/AnalysisPage';
 import { ProfilePage } from '@/features/profile/ProfilePage';
+import { AdminDashboard } from '@/features/admin/AdminDashboard';
 
 export default function App() {
   const { isAuthenticated, setLoading } = useAuthStore();
@@ -57,6 +59,14 @@ export default function App() {
         <Route path="upload" element={<UploadPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="paper/:id" element={<AnalysisPage />} />
+        <Route
+          path="admin"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
       </Route>
 
       {/* Catch all */}

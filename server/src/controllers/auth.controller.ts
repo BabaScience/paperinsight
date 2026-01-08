@@ -67,6 +67,7 @@ class AuthController {
             email: user.email,
             name: user.name,
             emailVerified: user.emailVerified,
+            isAdmin: user.isAdmin || false,
           },
         },
       });
@@ -114,6 +115,7 @@ class AuthController {
             email: user.email,
             name: user.name,
             emailVerified: user.emailVerified,
+            isAdmin: user.isAdmin || false,
           },
           ...tokens,
         },
@@ -174,6 +176,7 @@ class AuthController {
             email: user.email,
             name: user.name,
             emailVerified: user.emailVerified,
+            isAdmin: user.isAdmin || false,
             profile: user.profile || {},
             createdAt: user.createdAt,
           },

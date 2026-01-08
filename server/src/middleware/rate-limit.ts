@@ -3,6 +3,7 @@ import RedisStore from 'rate-limit-redis';
 import { redis } from '../config/redis.js';
 import type { Request } from 'express';
 import type { AuthRequest } from './auth.js';
+import { User } from '../models/user.model.js';
 
 /**
  * Helper to get a safe key from IP address (handles IPv6)
@@ -14,9 +15,22 @@ function getIpKey(req: Request): string {
 }
 
 /**
+ * Skip rate limiting for admin users
+ */
+async function skipIfAdmin(req: Request): Promise<boolean> {
+  const authReq = req as AuthRequest;
+  if (authReq.userId) {
+    const user = await User.findById(authReq.userId).select('isAdmin').lean();
+    return user?.isAdmin === true;
+  }
+  return false;
+}
+
+/**
  * Rate limiter for authentication endpoints
  * Strict limits to prevent brute force attacks
  * 5 attempts per 15 minutes per IP
+ * Admin users bypass this limit
  */
 export const authRateLimiter = rateLimit({
   store: new RedisStore({
@@ -33,6 +47,7 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   skipSuccessfulRequests: false,
+  skip: skipIfAdmin,
   // Use default key generator to avoid IPv6 validation issues
   validate: { xForwardedForHeader: false },
 });
@@ -41,6 +56,7 @@ export const authRateLimiter = rateLimit({
  * Rate limiter for general API endpoints
  * More lenient but still protective
  * 100 requests per minute per user (or IP if not authenticated)
+ * Admin users bypass this limit
  */
 export const apiRateLimiter = rateLimit({
   store: new RedisStore({
@@ -56,6 +72,7 @@ export const apiRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipIfAdmin,
   keyGenerator: (req: Request) => {
     // Use user ID if authenticated, otherwise fall back to IP
     const authReq = req as AuthRequest;
@@ -68,6 +85,7 @@ export const apiRateLimiter = rateLimit({
  * Stricter rate limiter for resource-intensive operations
  * Like PDF uploads and AI queries
  * 10 requests per minute per user
+ * Admin users bypass this limit
  */
 export const heavyOperationRateLimiter = rateLimit({
   store: new RedisStore({
@@ -83,6 +101,7 @@ export const heavyOperationRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipIfAdmin,
   keyGenerator: (req: Request) => {
     const authReq = req as AuthRequest;
     return authReq.userId || getIpKey(req);
@@ -93,6 +112,7 @@ export const heavyOperationRateLimiter = rateLimit({
 /**
  * Rate limiter specifically for token extension requests
  * Very strict: 2 requests per hour
+ * Admin users bypass this limit (though they don't need extensions)
  */
 export const tokenExtensionRateLimiter = rateLimit({
   store: new RedisStore({
@@ -108,6 +128,7 @@ export const tokenExtensionRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipIfAdmin,
   keyGenerator: (req: Request) => {
     const authReq = req as AuthRequest;
     return authReq.userId || getIpKey(req);

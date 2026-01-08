@@ -40,6 +40,7 @@ export interface IUser extends Document {
   emailVerificationTokenExpires?: Date;
   googleId?: string;
   authProvider?: 'local' | 'google';
+  isAdmin: boolean;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -184,11 +185,40 @@ const userSchema = new Schema<IUser>(
         default: 0,
       },
     },
+    isAdmin: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
   }
 );
+
+// Auto-detect admin status based on email
+userSchema.pre('save', async function (next) {
+  const ADMIN_EMAIL = env.ADMIN_EMAIL.toLowerCase();
+  if (this.email && this.email.toLowerCase() === ADMIN_EMAIL) {
+    this.isAdmin = true;
+  } else if (!this.isModified('isAdmin') && !this.isNew) {
+    // If not admin email and not explicitly setting isAdmin, ensure it's false
+    // Only set to false if it's not being modified (to allow manual admin assignment)
+    if (this.isAdmin === undefined) {
+      this.isAdmin = false;
+    }
+  }
+  next();
+});
+
+// Post-init hook to ensure admin status is set for existing users
+userSchema.post('init', function() {
+  const ADMIN_EMAIL = env.ADMIN_EMAIL.toLowerCase();
+  if (this.email && this.email.toLowerCase() === ADMIN_EMAIL && !this.isAdmin) {
+    // Mark as modified so save will update it
+    this.isAdmin = true;
+    this.markModified('isAdmin');
+  }
+});
 
 // Hash password before saving (only if password is provided)
 userSchema.pre('save', async function (next) {
@@ -235,5 +265,8 @@ userSchema.index({ emailVerificationToken: 1 });
 
 // Google ID index for OAuth lookups
 userSchema.index({ googleId: 1 }, { sparse: true });
+
+// Admin index for efficient admin queries
+userSchema.index({ isAdmin: 1 });
 
 export const User = mongoose.model<IUser>('User', userSchema);

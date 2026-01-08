@@ -7,6 +7,7 @@ interface User {
   email: string;
   name: string;
   emailVerified?: boolean;
+  isAdmin?: boolean;
   profile?: UserProfile;
 }
 

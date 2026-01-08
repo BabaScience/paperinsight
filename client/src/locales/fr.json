@@ -49,6 +49,7 @@
     "library": "Bibliothèque",
     "upload": "Téléverser",
     "profile": "Profil",
+    "admin": "Admin",
     "logout": "Déconnexion",
     "tokens": "Tokens",
     "tokensLeft": "{{value}}k restants"
@@ -389,6 +390,37 @@
     "dismiss": "Ignorer",
     "requestSent": "Demande d'extension envoyée avec succès !",
     "requestFailed": "Échec de l'envoi de la demande d'extension"
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Tableau de bord Admin",
+      "subtitle": "Surveiller les performances du système et l'activité des utilisateurs"
+    },
+    "stats": {
+      "totalUsers": "Total Utilisateurs",
+      "totalPapers": "Total Articles",
+      "totalTokens": "Total Tokens Utilisés",
+      "systemHealth": "Santé du Système",
+      "activeLast30Days": "actifs les 30 derniers jours",
+      "last30Days": "30 derniers jours",
+      "avgPerUser": "moyenne par utilisateur"
+    },
+    "charts": {
+      "userGrowth": "Croissance des Utilisateurs",
+      "papersByStatus": "Articles par Statut",
+      "tokenUsage": "Utilisation des Tokens dans le Temps",
+      "topUsers": "Top Utilisateurs par Tokens",
+      "noData": "Aucune donnée disponible"
+    },
+    "health": {
+      "title": "Santé du Système",
+      "database": "Base de données",
+      "redis": "Redis",
+      "uptime": "Temps de fonctionnement",
+      "latency": "latence",
+      "healthy": "Sain",
+      "degraded": "Dégradé"
+    }
   }
 }
 
