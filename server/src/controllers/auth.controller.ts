@@ -499,8 +499,14 @@ class AuthController {
       redirectUrl.searchParams.set('refreshToken', jwtTokens.refreshToken);
       redirectUrl.searchParams.set('userId', user._id.toString());
 
-      console.log('✅ Redirecting to frontend:', redirectUrl.toString());
-      console.log('✅ Frontend URL from env:', env.FRONTEND_URL);
+      // Log redirect details for debugging (without exposing full tokens)
+      console.log('✅ Redirecting to frontend callback');
+      console.log('   Frontend URL:', env.FRONTEND_URL);
+      console.log('   User ID:', user._id.toString());
+      console.log('   Access token length:', jwtTokens.accessToken.length);
+      console.log('   Refresh token length:', jwtTokens.refreshToken.length);
+      console.log('   Full redirect URL (first 100 chars):', redirectUrl.toString().substring(0, 100) + '...');
+      
       res.redirect(redirectUrl.toString());
     } catch (error) {
       console.error('❌ Google OAuth callback error:', error);

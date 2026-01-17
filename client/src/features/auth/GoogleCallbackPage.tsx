@@ -19,12 +19,17 @@ export function GoogleCallbackPage() {
   
   // Track if we've already processed the callback to prevent re-processing
   const hasProcessed = useRef(false);
+  // Track status in ref for timeout check (state might not be updated yet)
+  const statusRef = useRef<'processing' | 'success' | 'error'>('processing');
 
   useEffect(() => {
     // Prevent multiple executions
     if (hasProcessed.current) {
+      console.log('🔒 Google callback already processed, skipping');
       return;
     }
+
+    console.log('🔐 Google OAuth callback handler started');
 
     // Read params directly from URL to avoid React Router re-render issues
     const urlParams = new URLSearchParams(window.location.search);
@@ -33,16 +38,29 @@ export function GoogleCallbackPage() {
     const userId = urlParams.get('userId');
     const error = urlParams.get('error');
 
+    console.log('📋 Callback params:', {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+      hasUserId: !!userId,
+      hasError: !!error,
+      userId: userId || 'none',
+    });
+
     // If no tokens/error in URL, don't process
     if (!accessToken && !refreshToken && !userId && !error) {
+      console.log('⚠️ No OAuth params found in URL, redirecting to login');
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
       return;
     }
 
-    // Mark as processed immediately
+    // Mark as processed immediately to prevent re-execution
     hasProcessed.current = true;
 
     // SECURITY: Immediately remove sensitive tokens from URL BEFORE processing
     // This prevents tokens from appearing in browser history, being shared, or logged
+    console.log('🔒 Removing tokens from URL for security');
     window.history.replaceState(
       {},
       '',
@@ -50,21 +68,40 @@ export function GoogleCallbackPage() {
     );
     // Also update React Router's search params
     setSearchParams({}, { replace: true });
+    console.log('✅ URL cleaned, tokens removed from address bar');
+
+    // Set up fallback timeout to ensure redirect happens even if something fails
+    const fallbackTimeout = setTimeout(() => {
+      console.warn('⚠️ Callback handler timeout - redirecting to login as fallback');
+      if (statusRef.current === 'processing') {
+        statusRef.current = 'error';
+        setStatus('error');
+        setErrorMessage('Authentication timeout. Please try again.');
+        toast.error('Authentication timeout. Please try again.');
+        navigate('/login', { replace: true });
+      }
+    }, 10000); // 10 second timeout
 
     if (error) {
+      console.error('❌ OAuth error received:', error);
+      clearTimeout(fallbackTimeout);
+      statusRef.current = 'error';
       setStatus('error');
       setErrorMessage(error);
       toast.error(t('auth.googleAuthFailed', 'Google authentication failed'));
       setTimeout(() => {
-        navigate('/login');
+        navigate('/login', { replace: true });
       }, 3000);
       return;
     }
 
     if (accessToken && refreshToken && userId) {
+      console.log('✅ All tokens present, starting authentication flow');
+      
       // Fetch user data asynchronously
       const fetchUserAndLogin = async () => {
         try {
+          console.log('🔄 Setting temporary user state with tokens');
           // Set tokens first so the API call can use them
           const tempUser = {
             id: userId,
@@ -73,10 +110,13 @@ export function GoogleCallbackPage() {
             emailVerified: true,
           };
           login(tempUser, accessToken, refreshToken);
+          console.log('✅ Tokens stored in auth store');
           
+          console.log('🔄 Fetching full user data from API...');
           // Now fetch the full user data
           const response = await authApi.me();
           const userData = response.data.data.user;
+          console.log('✅ User data fetched:', { id: userData.id, email: userData.email });
 
           const user = {
             id: userData.id,
@@ -88,32 +128,58 @@ export function GoogleCallbackPage() {
           };
 
           login(user, accessToken, refreshToken);
+          console.log('✅ User logged in successfully');
+          statusRef.current = 'success';
           setStatus('success');
           toast.success(t('auth.loginSuccess', 'Logged in successfully'));
           
+          clearTimeout(fallbackTimeout);
+          
           // Redirect to dashboard after short delay
+          console.log('🔄 Redirecting to dashboard in 1 second...');
           setTimeout(() => {
-            navigate('/');
+            console.log('✅ Redirecting to dashboard');
+            navigate('/', { replace: true });
           }, 1000);
         } catch (error: any) {
+          console.error('❌ Error during authentication:', error);
+          clearTimeout(fallbackTimeout);
+          statusRef.current = 'error';
           setStatus('error');
-          setErrorMessage(error.message || t('auth.googleAuthFailed', 'Failed to complete Google authentication'));
-          toast.error(error.message || t('auth.googleAuthFailed', 'Failed to complete Google authentication'));
+          const errorMessage = error?.response?.data?.message || error?.message || t('auth.googleAuthFailed', 'Failed to complete Google authentication');
+          setErrorMessage(errorMessage);
+          toast.error(errorMessage);
+          
+          // Clear any partial auth state on error
+          useAuthStore.getState().clearAuth();
+          
           setTimeout(() => {
-            navigate('/login');
+            navigate('/login', { replace: true });
           }, 3000);
         }
       };
 
       fetchUserAndLogin();
     } else {
+      console.error('❌ Missing required tokens:', {
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+        hasUserId: !!userId,
+      });
+      clearTimeout(fallbackTimeout);
+      statusRef.current = 'error';
       setStatus('error');
       setErrorMessage(t('auth.missingTokens', 'Missing authentication tokens'));
       toast.error(t('auth.missingTokens', 'Missing authentication tokens'));
       setTimeout(() => {
-        navigate('/login');
+        navigate('/login', { replace: true });
       }, 3000);
     }
+    
+    // Cleanup function
+    return () => {
+      clearTimeout(fallbackTimeout);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run once on mount
 
