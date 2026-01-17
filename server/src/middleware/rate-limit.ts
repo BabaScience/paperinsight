@@ -29,7 +29,7 @@ async function skipIfAdmin(req: Request): Promise<boolean> {
 /**
  * Rate limiter for authentication endpoints
  * Strict limits to prevent brute force attacks
- * 5 attempts per 15 minutes per IP
+ * 15 attempts per 30 minutes per IP
  * Admin users bypass this limit
  */
 export const authRateLimiter = rateLimit({
@@ -38,8 +38,8 @@ export const authRateLimiter = rateLimit({
     sendCommand: (...args: string[]) => redis.call(...args),
     prefix: 'rl:auth:',
   }),
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 requests per window
+  windowMs: 30 * 60 * 1000, // 30 minutes
+  max: 15, // 15 requests per window
   message: {
     status: 'error',
     message: 'Too many authentication attempts, please try again later',
