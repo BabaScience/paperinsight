@@ -23,6 +23,20 @@ export function GoogleCallbackPage() {
     const userId = searchParams.get('userId');
     const error = searchParams.get('error');
 
+    // SECURITY: Immediately remove sensitive tokens from URL to prevent:
+    // - Exposure in browser history
+    // - Accidental sharing via copy/paste
+    // - Leakage in referrer headers
+    // - Logging in server access logs
+    if (accessToken || refreshToken || userId || error) {
+      // Remove all query parameters from URL without page reload
+      window.history.replaceState(
+        {},
+        '',
+        window.location.pathname
+      );
+    }
+
     if (error) {
       setStatus('error');
       setErrorMessage(error);
