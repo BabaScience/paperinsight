@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CircularProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +8,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import { authApi } from '@/lib/api';
 
 export function GoogleCallbackPage() {
-  const [searchParams] = useSearchParams();
+  const [, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { login } = useAuthStore();
   const { resolvedMode } = useThemeStore();
@@ -16,26 +16,40 @@ export function GoogleCallbackPage() {
   
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  // Track if we've already processed the callback to prevent re-processing
+  const hasProcessed = useRef(false);
 
   useEffect(() => {
-    const accessToken = searchParams.get('accessToken');
-    const refreshToken = searchParams.get('refreshToken');
-    const userId = searchParams.get('userId');
-    const error = searchParams.get('error');
-
-    // SECURITY: Immediately remove sensitive tokens from URL to prevent:
-    // - Exposure in browser history
-    // - Accidental sharing via copy/paste
-    // - Leakage in referrer headers
-    // - Logging in server access logs
-    if (accessToken || refreshToken || userId || error) {
-      // Remove all query parameters from URL without page reload
-      window.history.replaceState(
-        {},
-        '',
-        window.location.pathname
-      );
+    // Prevent multiple executions
+    if (hasProcessed.current) {
+      return;
     }
+
+    // Read params directly from URL to avoid React Router re-render issues
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessToken = urlParams.get('accessToken');
+    const refreshToken = urlParams.get('refreshToken');
+    const userId = urlParams.get('userId');
+    const error = urlParams.get('error');
+
+    // If no tokens/error in URL, don't process
+    if (!accessToken && !refreshToken && !userId && !error) {
+      return;
+    }
+
+    // Mark as processed immediately
+    hasProcessed.current = true;
+
+    // SECURITY: Immediately remove sensitive tokens from URL BEFORE processing
+    // This prevents tokens from appearing in browser history, being shared, or logged
+    window.history.replaceState(
+      {},
+      '',
+      window.location.pathname
+    );
+    // Also update React Router's search params
+    setSearchParams({}, { replace: true });
 
     if (error) {
       setStatus('error');
@@ -100,7 +114,8 @@ export function GoogleCallbackPage() {
         navigate('/login');
       }, 3000);
     }
-  }, [searchParams, navigate, login, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - only run once on mount
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
