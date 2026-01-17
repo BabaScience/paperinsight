@@ -37,25 +37,36 @@ export default defineConfig({
     minify: 'esbuild', // Faster than terser
     cssMinify: 'esbuild',
     
-    // Chunking strategy for better caching and parallel loading
+    // Reduce chunking complexity for faster builds
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Vendor chunks for better caching
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'mui-vendor': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
-          'mermaid-vendor': ['mermaid'],
-          'pdf-vendor': ['react-pdf'],
-          'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
-          'i18n-vendor': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
-          'query-vendor': ['@tanstack/react-query'],
-          'ui-vendor': ['framer-motion', 'react-dropzone', 'react-hot-toast', 'react-markdown'],
-          'utils-vendor': ['axios', 'socket.io-client', 'zustand'],
+        // Simplified chunking - fewer chunks = faster build
+        manualChunks: (id) => {
+          // Group large libraries separately
+          if (id.includes('node_modules')) {
+            if (id.includes('mermaid')) {
+              return 'mermaid';
+            }
+            if (id.includes('react-pdf')) {
+              return 'react-pdf';
+            }
+            if (id.includes('@mui') || id.includes('@emotion')) {
+              return 'mui';
+            }
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'react-vendor';
+            }
+            // Group other node_modules together
+            return 'vendor';
+          }
         },
         // Optimize chunk file names
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: (assetInfo) => {
+          if (!assetInfo.name) {
+            return `assets/[name]-[hash][extname]`;
+          }
           const info = assetInfo.name.split('.');
           const ext = info[info.length - 1];
           if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
@@ -67,6 +78,8 @@ export default defineConfig({
           return `assets/[ext]/[name]-[hash][extname]`;
         },
       },
+      // Increase build performance
+      maxParallelFileOps: 5,
     },
     
     // Increase chunk size warning limit (Mermaid and MUI are large)
@@ -80,20 +93,29 @@ export default defineConfig({
     
     // Optimize asset handling
     assetsInlineLimit: 4096, // Inline small assets as base64
+    
+    // Report compressed size (faster than reporting uncompressed)
+    reportCompressedSize: false,
   },
   
-  // Optimize dependencies pre-bundling
+  // Optimize dependencies pre-bundling - reduce for faster builds
   optimizeDeps: {
     include: [
       'react',
       'react-dom',
       'react-router-dom',
-      '@mui/material',
-      '@mui/icons-material',
-      'mermaid',
-      'axios',
     ],
-    exclude: ['react-pdf'], // Exclude react-pdf from pre-bundling as it's large and dynamic
+    // Exclude large libraries from pre-bundling to speed up build
+    exclude: ['mermaid', 'react-pdf', '@mui/material'],
+    // Force esbuild to use faster options
+    esbuildOptions: {
+      target: 'esnext',
+    },
+  },
+  
+  // Increase build concurrency
+  esbuild: {
+    target: 'esnext',
   },
 });
 
