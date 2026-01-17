@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:fast": "vite --force --host",
+    "dev:no-check": "vite --no-optimize-deps",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

@@ -15,13 +15,48 @@ function getIpKey(req: Request): string {
 }
 
 /**
+ * Get admin status from cache (same logic as admin middleware)
+ * Uses Redis cache to avoid database queries
+ */
+async function getAdminStatusCached(userId: string): Promise<boolean> {
+  const cacheKey = `admin:status:${userId}`;
+  try {
+    const cached = await redis.get(cacheKey);
+    if (cached !== null) {
+      const adminStatus = JSON.parse(cached);
+      return adminStatus.isAdmin === true;
+    }
+  } catch (error) {
+    // Cache error - fall through to database query
+    console.warn(`⚠️  Admin cache read error for user ${userId}:`, error);
+  }
+  
+  // Cache miss - query database
+  const user = await User.findById(userId).select('isAdmin email').lean();
+  if (!user) {
+    return false;
+  }
+
+  const adminStatus = { isAdmin: user.isAdmin, email: user.email };
+
+  // Cache the result
+  try {
+    await redis.setex(cacheKey, 300, JSON.stringify(adminStatus)); // 5 minutes TTL
+  } catch (error) {
+    console.warn(`⚠️  Admin cache write error for user ${userId}:`, error);
+  }
+
+  return user.isAdmin === true;
+}
+
+/**
  * Skip rate limiting for admin users
+ * Uses cached admin status to avoid database queries
  */
 async function skipIfAdmin(req: Request): Promise<boolean> {
   const authReq = req as AuthRequest;
   if (authReq.userId) {
-    const user = await User.findById(authReq.userId).select('isAdmin').lean();
-    return user?.isAdmin === true;
+    return await getAdminStatusCached(authReq.userId);
   }
   return false;
 }

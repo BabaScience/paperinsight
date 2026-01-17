@@ -19,6 +19,15 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Faster HMR (Hot Module Replacement)
+    hmr: {
+      overlay: true,
+    },
+    // Watch options for better performance
+    watch: {
+      // Ignore node_modules except for specific packages
+      ignored: ['**/node_modules/**', '**/.git/**'],
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
@@ -98,25 +107,57 @@ export default defineConfig({
     reportCompressedSize: false,
   },
   
-  // Optimize dependencies pre-bundling - reduce for faster builds
+  // Optimize dependencies pre-bundling for faster dev server startup
   optimizeDeps: {
+    // Only pre-bundle the most essential, small dependencies
+    // Large libraries like MUI will load on-demand (faster startup)
     include: [
       'react',
       'react-dom',
       'react-router-dom',
+      'react-router',
+      'axios',
+      'zustand',
     ],
-    // Exclude large libraries from pre-bundling to speed up build
-    exclude: ['mermaid', 'react-pdf', '@mui/material'],
+    // Exclude large libraries - let them load on-demand for faster startup
+    exclude: [
+      'mermaid',
+      'react-pdf',
+      '@mui/material',
+      '@mui/icons-material',
+      '@emotion/react',
+      '@emotion/styled',
+      '@tanstack/react-query',
+      'framer-motion',
+      'i18next',
+      'react-i18next',
+    ],
     // Force esbuild to use faster options
     esbuildOptions: {
       target: 'esnext',
+      legalComments: 'none',
+      treeShaking: true,
     },
+    // Don't force re-optimization unless dependencies change
+    force: false,
   },
   
   // Increase build concurrency
   esbuild: {
     target: 'esnext',
+    // Faster parsing
+    legalComments: 'none',
   },
+  
+  // Development-specific optimizations
+  logLevel: 'warn', // Reduce log verbosity even more for faster startup
+  clearScreen: false, // Don't clear screen on startup (faster)
+  
+  // Skip type checking during dev for faster startup (TypeScript errors will show in browser)
+  // Uncomment if you want even faster startup (but lose type checking in terminal)
+  // esbuild: {
+  //   logOverride: { 'this-is-undefined-in-esm': 'silent' },
+  // },
 });
 
 

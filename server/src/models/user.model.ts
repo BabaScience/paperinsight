@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { env } from '../config/env.js';
+import { redis } from '../config/redis.js';
 
 export type ExpertiseLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert';
 export type PreferredStyle = 'technical' | 'simplified' | 'examples-heavy' | 'concise';
@@ -227,6 +228,18 @@ userSchema.pre('save', async function (next) {
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
   next();
+});
+
+// Invalidate admin cache when admin status changes
+userSchema.post('save', async function () {
+  if (this.isModified('isAdmin')) {
+    const cacheKey = `admin:status:${this._id}`;
+    try {
+      await redis.del(cacheKey);
+    } catch (error) {
+      console.warn(`⚠️  Failed to invalidate admin cache for user ${this._id}:`, error);
+    }
+  }
 });
 
 // Compare password method

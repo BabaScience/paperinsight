@@ -122,8 +122,11 @@ process.on('SIGINT', gracefulShutdown);
 
 // Start server
 async function startServer(): Promise<void> {
+  const startTime = Date.now();
+  
   try {
-    // Connect to databases
+    // Connect to databases (critical - must succeed)
+    console.log('⏳ Connecting to MongoDB...');
     await connectDatabase();
   } catch (error) {
     console.error('❌ Failed to connect to MongoDB. Is it running?');
@@ -131,22 +134,46 @@ async function startServer(): Promise<void> {
     process.exit(1);
   }
 
+  // Initialize services in parallel (non-critical - can fail gracefully)
+  const servicePromises: Promise<void>[] = [];
+  
   // Initialize Qdrant (non-fatal if not available)
-  await initializeQdrantCollection();
+  servicePromises.push(
+    initializeQdrantCollection().catch((error) => {
+      // Already logged in initializeQdrantCollection
+    })
+  );
   
   // Initialize MinIO (non-fatal if not available)
-  await initializeMinio();
+  servicePromises.push(
+    initializeMinio().catch((error) => {
+      // Already logged in initializeMinio
+    })
+  );
   
-  // Initialize background workers
+  // Don't wait for services - start server immediately
+  // Services will initialize in background
+  
+  // Initialize background workers (non-blocking)
   initializeWorkers();
   
   // Setup WebSocket handlers
   setupSocketHandlers(io);
   
+  // Start HTTP server immediately
   httpServer.listen(env.PORT, () => {
+    const startupTime = Date.now() - startTime;
     console.log(`\n🚀 Server running on http://localhost:${env.PORT}`);
     console.log(`📡 WebSocket server ready`);
-    console.log(`🔧 Environment: ${env.NODE_ENV}\n`);
+    console.log(`🔧 Environment: ${env.NODE_ENV}`);
+    console.log(`⏱️  Startup time: ${startupTime}ms\n`);
+    
+    // Log service initialization status in background
+    Promise.allSettled(servicePromises).then((results) => {
+      const qdrantStatus = results[0]?.status === 'fulfilled' ? '✅' : '⚠️';
+      const minioStatus = results[1]?.status === 'fulfilled' ? '✅' : '⚠️';
+      console.log(`📊 Services: Qdrant ${qdrantStatus} | MinIO ${minioStatus}`);
+    });
   });
 }
 

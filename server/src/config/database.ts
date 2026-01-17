@@ -6,30 +6,30 @@ import { env } from './env.js';
  * Optimized for production workloads
  */
 const mongooseOptions: mongoose.ConnectOptions = {
-  // Connection pool settings
-  maxPoolSize: 10,           // Maximum number of connections in the pool
-  minPoolSize: 5,            // Minimum number of connections to keep
+  // Connection pool settings - optimized for dev vs prod
+  maxPoolSize: env.NODE_ENV === 'development' ? 5 : 10,  // Smaller pool in dev
+  minPoolSize: env.NODE_ENV === 'development' ? 1 : 5,  // Don't pre-create connections in dev
   
-  // Timeout settings
+  // Timeout settings - faster in development
   socketTimeoutMS: 45000,            // Close sockets after 45 seconds of inactivity
-  serverSelectionTimeoutMS: 5000,    // Fail fast if no server available
-  connectTimeoutMS: 10000,           // Connection timeout
+  serverSelectionTimeoutMS: env.NODE_ENV === 'development' ? 3000 : 5000,  // Faster fail in dev
+  connectTimeoutMS: env.NODE_ENV === 'development' ? 5000 : 10000,        // Faster timeout in dev
   
-  // Heartbeat settings
-  heartbeatFrequencyMS: 10000,       // Check server health every 10 seconds
+  // Heartbeat settings - less frequent in dev
+  heartbeatFrequencyMS: env.NODE_ENV === 'development' ? 30000 : 10000,  // Less frequent checks in dev
   
   // Write concern for data safety
   writeConcern: {
-    w: 'majority',                   // Wait for majority of replicas to acknowledge
-    wtimeout: 5000,                  // Timeout for write concern
+    w: env.NODE_ENV === 'development' ? 1 : 'majority',  // Faster writes in dev
+    wtimeout: 5000,
   },
   
   // Read preference - must be 'primary' to support transactions
   readPreference: 'primary',
   
   // Retry settings
-  retryWrites: true,                 // Retry failed writes once
-  retryReads: true,                  // Retry failed reads once
+  retryWrites: true,
+  retryReads: true,
   
   // Auto-index in development only
   autoIndex: env.NODE_ENV === 'development',
